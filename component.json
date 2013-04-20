@@ -1,5 +1,5 @@
 {
-  "name": "highlight.js",
+  "name": "highlightjs",
   "version": "7.3.0",
   "main": "highlight.pack.js",
   "ignore": [

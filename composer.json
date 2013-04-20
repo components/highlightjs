@@ -8,6 +8,7 @@
             "name": "Ivan Sagalaev",
             "email": "maniac@softwaremaniacs.org",
             "homepage": "http://softwaremaniacs.org"
+        }
     ],
     "require": {
         "robloach/component-installer": "*"
