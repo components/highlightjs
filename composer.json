@@ -19,7 +19,7 @@
                 "highlight.pack.js"
             ],
             "files": [
-                "styles/default.css"
+                "styles/*"
             ],
             "shim": {
                 "exports": "hljs"
