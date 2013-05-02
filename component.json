@@ -1,13 +1,7 @@
 {
   "name": "highlightjs",
+  "repo": "components/highlightjs",
   "version": "7.3.0",
-  "main": "highlight.pack.js",
-  "ignore": [
-    "**/.*",
-    "node_modules",
-    "vendor",
-    "components"
-  ],
   "scripts": [
     "highlight.pack.js"
   ],
