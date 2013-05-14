@@ -2,6 +2,7 @@
   "name": "highlightjs",
   "repo": "components/highlightjs",
   "version": "7.3.0",
+  "main": "highlight.pack.js",
   "scripts": [
     "highlight.pack.js"
   ],
