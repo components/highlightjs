@@ -1,4 +1,4 @@
-VERSION=8.0
+VERSION=8.2
 
 default: highlight
 		@cp -f highlight/build/highlight.* .
