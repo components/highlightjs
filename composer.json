@@ -16,7 +16,7 @@
     "extra": {
         "component": {
             "scripts": [
-                "highlight.pack.js"
+                "highlight.pack.min.js"
             ],
             "files": [
                 "styles/*"

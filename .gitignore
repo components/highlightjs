@@ -2,3 +2,4 @@ highlight
 composer.lock
 vendor
 components
+build

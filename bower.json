@@ -2,7 +2,7 @@
   "name": "highlightjs",
   "version": "8.3.0",
   "main": [
-    "highlight.pack.js",
+    "highlight.pack.min.js",
     "styles/default.css"
   ],
   "ignore": [
