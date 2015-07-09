@@ -2,3 +2,5 @@ highlight
 composer.lock
 vendor
 components
+build
+bower_components
