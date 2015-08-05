@@ -342,10 +342,15 @@
     }
 
     function processSubLanguage() {
-      if (top.subLanguage && !languages[top.subLanguage]) {
+      var explicit = typeof top.subLanguage == 'string';
+      if (explicit && !languages[top.subLanguage]) {
         return escape(mode_buffer);
       }
-      var result = top.subLanguage ? highlight(top.subLanguage, mode_buffer, true, continuations[top.subLanguage]) : highlightAuto(mode_buffer);
+
+      var result = explicit ?
+                   highlight(top.subLanguage, mode_buffer, true, continuations[top.subLanguage]) :
+                   highlightAuto(mode_buffer, top.subLanguage.length ? top.subLanguage : undefined);
+
       // Counting embedded language score towards the host language may be disabled
       // with zeroing the containing mode relevance. Usecase in point is Markdown that
       // allows XML everywhere and makes every XML snippet to have a much larger Markdown
@@ -353,7 +358,7 @@
       if (top.relevance > 0) {
         relevance += result.relevance;
       }
-      if (top.subLanguageMode == 'continuous') {
+      if (explicit) {
         continuations[top.subLanguage] = result.top;
       }
       return buildSpan(result.language, result.value, false, true);
@@ -662,7 +667,7 @@
   hljs.IDENT_RE = '[a-zA-Z]\\w*';
   hljs.UNDERSCORE_IDENT_RE = '[a-zA-Z_]\\w*';
   hljs.NUMBER_RE = '\\b\\d+(\\.\\d+)?';
-  hljs.C_NUMBER_RE = '\\b(0[xX][a-fA-F0-9]+|(\\d+(\\.\\d*)?|\\.\\d+)([eE][-+]?\\d+)?)'; // 0x..., 0..., decimal, float
+  hljs.C_NUMBER_RE = '(\\b0[xX][a-fA-F0-9]+|(\\b\\d+(\\.\\d*)?|\\.\\d+)([eE][-+]?\\d+)?)'; // 0x..., 0..., decimal, float
   hljs.BINARY_NUMBER_RE = '\\b(0b[01]+)'; // 0b...
   hljs.RE_STARTERS_RE = '!|!=|!==|%|%=|&|&&|&=|\\*|\\*=|\\+|\\+=|,|-|-=|/=|/|:|;|<<|<<=|<=|<|===|==|=|>>>=|>>=|>=|>>>|>>|>|\\?|\\[|\\{|\\(|\\^|\\^=|\\||\\|=|\\|\\||~';
 
@@ -697,7 +702,7 @@
     mode.contains.push(hljs.PHRASAL_WORDS_MODE);
     mode.contains.push({
       className: 'doctag',
-      beginKeywords: "TODO FIXME NOTE BUG XXX",
+      begin: "(?:TODO|FIXME|NOTE|BUG|XXX):",
       relevance: 0
     });
     return mode;
@@ -913,7 +918,8 @@ hljs.registerLanguage('actionscript', function(hljs) {
           }
         ]
       }
-    ]
+    ],
+    illegal: /#/
   };
 });
 
@@ -1056,7 +1062,7 @@ hljs.registerLanguage('applescript', function(hljs) {
         contains: [hljs.UNDERSCORE_TITLE_MODE, PARAMS]
       }
     ].concat(COMMENTS),
-    illegal: '//|->|=>'
+    illegal: '//|->|=>|\\[\\['
   };
 });
 
@@ -1156,7 +1162,7 @@ hljs.registerLanguage('xml', function(hljs) {
   var XML_IDENT_RE = '[A-Za-z0-9\\._:-]+';
   var PHP = {
     begin: /<\?(php)?(?!\w)/, end: /\?>/,
-    subLanguage: 'php', subLanguageMode: 'continuous'
+    subLanguage: 'php'
   };
   var TAG_INTERNALS = {
     endsWithParent: true,
@@ -1232,7 +1238,7 @@ hljs.registerLanguage('xml', function(hljs) {
         contains: [TAG_INTERNALS],
         starts: {
           end: '\<\/script\>', returnEnd: true,
-          subLanguage: ''
+          subLanguage: ['actionscript', 'javascript', 'handlebars']
         }
       },
       PHP,
@@ -1460,7 +1466,7 @@ hljs.registerLanguage('aspectj', function (hljs) {
   var SHORTKEYS = 'get set args call';
   return {
     keywords : KEYWORDS,
-    illegal : /<\//,
+    illegal : /<\/|#/,
     contains : [
       hljs.COMMENT(
         '/\\*\\*',
@@ -1645,6 +1651,1760 @@ hljs.registerLanguage('autohotkey', function(hljs) {
       }
     ])
   }
+});
+
+hljs.registerLanguage('autoit', function(hljs) {
+    var KEYWORDS = 'ByRef Case Const ContinueCase ContinueLoop ' +
+        'Default Dim Do Else ElseIf EndFunc EndIf EndSelect ' +
+        'EndSwitch EndWith Enum Exit ExitLoop For Func ' +
+        'Global If In Local Next ReDim Return Select Static ' +
+        'Step Switch Then To Until Volatile WEnd While With',
+
+        LITERAL = 'True False And Null Not Or',
+
+        BUILT_IN = 'Abs ACos AdlibRegister AdlibUnRegister Asc AscW ASin ' +
+        'Assign ATan AutoItSetOption AutoItWinGetTitle ' +
+        'AutoItWinSetTitle Beep Binary BinaryLen BinaryMid ' +
+        'BinaryToString BitAND BitNOT BitOR BitRotate BitShift ' +
+        'BitXOR BlockInput Break Call CDTray Ceiling Chr ' +
+        'ChrW ClipGet ClipPut ConsoleRead ConsoleWrite ' +
+        'ConsoleWriteError ControlClick ControlCommand ' +
+        'ControlDisable ControlEnable ControlFocus ControlGetFocus ' +
+        'ControlGetHandle ControlGetPos ControlGetText ControlHide ' +
+        'ControlListView ControlMove ControlSend ControlSetText ' +
+        'ControlShow ControlTreeView Cos Dec DirCopy DirCreate ' +
+        'DirGetSize DirMove DirRemove DllCall DllCallAddress ' +
+        'DllCallbackFree DllCallbackGetPtr DllCallbackRegister ' +
+        'DllClose DllOpen DllStructCreate DllStructGetData ' +
+        'DllStructGetPtr DllStructGetSize DllStructSetData ' +
+        'DriveGetDrive DriveGetFileSystem DriveGetLabel ' +
+        'DriveGetSerial DriveGetType DriveMapAdd DriveMapDel ' +
+        'DriveMapGet DriveSetLabel DriveSpaceFree DriveSpaceTotal ' +
+        'DriveStatus EnvGet EnvSet EnvUpdate Eval Execute Exp ' +
+        'FileChangeDir FileClose FileCopy FileCreateNTFSLink ' +
+        'FileCreateShortcut FileDelete FileExists FileFindFirstFile ' +
+        'FileFindNextFile FileFlush FileGetAttrib FileGetEncoding ' +
+        'FileGetLongName FileGetPos FileGetShortcut FileGetShortName ' +
+        'FileGetSize FileGetTime FileGetVersion FileInstall ' +
+        'FileMove FileOpen FileOpenDialog FileRead FileReadLine ' +
+        'FileReadToArray FileRecycle FileRecycleEmpty FileSaveDialog ' +
+        'FileSelectFolder FileSetAttrib FileSetEnd FileSetPos ' +
+        'FileSetTime FileWrite FileWriteLine Floor FtpSetProxy ' +
+        'FuncName GUICreate GUICtrlCreateAvi GUICtrlCreateButton ' +
+        'GUICtrlCreateCheckbox GUICtrlCreateCombo ' +
+        'GUICtrlCreateContextMenu GUICtrlCreateDate GUICtrlCreateDummy ' +
+        'GUICtrlCreateEdit GUICtrlCreateGraphic GUICtrlCreateGroup ' +
+        'GUICtrlCreateIcon GUICtrlCreateInput GUICtrlCreateLabel ' +
+        'GUICtrlCreateList GUICtrlCreateListView ' +
+        'GUICtrlCreateListViewItem GUICtrlCreateMenu ' +
+        'GUICtrlCreateMenuItem GUICtrlCreateMonthCal GUICtrlCreateObj ' +
+        'GUICtrlCreatePic GUICtrlCreateProgress GUICtrlCreateRadio ' +
+        'GUICtrlCreateSlider GUICtrlCreateTab GUICtrlCreateTabItem ' +
+        'GUICtrlCreateTreeView GUICtrlCreateTreeViewItem ' +
+        'GUICtrlCreateUpdown GUICtrlDelete GUICtrlGetHandle ' +
+        'GUICtrlGetState GUICtrlRead GUICtrlRecvMsg ' +
+        'GUICtrlRegisterListViewSort GUICtrlSendMsg GUICtrlSendToDummy ' +
+        'GUICtrlSetBkColor GUICtrlSetColor GUICtrlSetCursor ' +
+        'GUICtrlSetData GUICtrlSetDefBkColor GUICtrlSetDefColor ' +
+        'GUICtrlSetFont GUICtrlSetGraphic GUICtrlSetImage ' +
+        'GUICtrlSetLimit GUICtrlSetOnEvent GUICtrlSetPos ' +
+        'GUICtrlSetResizing GUICtrlSetState GUICtrlSetStyle ' +
+        'GUICtrlSetTip GUIDelete GUIGetCursorInfo GUIGetMsg ' +
+        'GUIGetStyle GUIRegisterMsg GUISetAccelerators GUISetBkColor ' +
+        'GUISetCoord GUISetCursor GUISetFont GUISetHelp GUISetIcon ' +
+        'GUISetOnEvent GUISetState GUISetStyle GUIStartGroup ' +
+        'GUISwitch Hex HotKeySet HttpSetProxy HttpSetUserAgent ' +
+        'HWnd InetClose InetGet InetGetInfo InetGetSize InetRead ' +
+        'IniDelete IniRead IniReadSection IniReadSectionNames ' +
+        'IniRenameSection IniWrite IniWriteSection InputBox Int ' +
+        'IsAdmin IsArray IsBinary IsBool IsDeclared IsDllStruct ' +
+        'IsFloat IsFunc IsHWnd IsInt IsKeyword IsNumber IsObj ' +
+        'IsPtr IsString Log MemGetStats Mod MouseClick ' +
+        'MouseClickDrag MouseDown MouseGetCursor MouseGetPos ' +
+        'MouseMove MouseUp MouseWheel MsgBox Number ObjCreate ' +
+        'ObjCreateInterface ObjEvent ObjGet ObjName ' +
+        'OnAutoItExitRegister OnAutoItExitUnRegister Opt Ping ' +
+        'PixelChecksum PixelGetColor PixelSearch ProcessClose ' +
+        'ProcessExists ProcessGetStats ProcessList ' +
+        'ProcessSetPriority ProcessWait ProcessWaitClose ProgressOff ' +
+        'ProgressOn ProgressSet Ptr Random RegDelete RegEnumKey ' +
+        'RegEnumVal RegRead RegWrite Round Run RunAs RunAsWait ' +
+        'RunWait Send SendKeepActive SetError SetExtended ' +
+        'ShellExecute ShellExecuteWait Shutdown Sin Sleep ' +
+        'SoundPlay SoundSetWaveVolume SplashImageOn SplashOff ' +
+        'SplashTextOn Sqrt SRandom StatusbarGetText StderrRead ' +
+        'StdinWrite StdioClose StdoutRead String StringAddCR ' +
+        'StringCompare StringFormat StringFromASCIIArray StringInStr ' +
+        'StringIsAlNum StringIsAlpha StringIsASCII StringIsDigit ' +
+        'StringIsFloat StringIsInt StringIsLower StringIsSpace ' +
+        'StringIsUpper StringIsXDigit StringLeft StringLen ' +
+        'StringLower StringMid StringRegExp StringRegExpReplace ' +
+        'StringReplace StringReverse StringRight StringSplit ' +
+        'StringStripCR StringStripWS StringToASCIIArray ' +
+        'StringToBinary StringTrimLeft StringTrimRight StringUpper ' +
+        'Tan TCPAccept TCPCloseSocket TCPConnect TCPListen ' +
+        'TCPNameToIP TCPRecv TCPSend TCPShutdown TCPStartup ' +
+        'TimerDiff TimerInit ToolTip TrayCreateItem TrayCreateMenu ' +
+        'TrayGetMsg TrayItemDelete TrayItemGetHandle ' +
+        'TrayItemGetState TrayItemGetText TrayItemSetOnEvent ' +
+        'TrayItemSetState TrayItemSetText TraySetClick TraySetIcon ' +
+        'TraySetOnEvent TraySetPauseIcon TraySetState TraySetToolTip ' +
+        'TrayTip UBound UDPBind UDPCloseSocket UDPOpen UDPRecv ' +
+        'UDPSend UDPShutdown UDPStartup VarGetType WinActivate ' +
+        'WinActive WinClose WinExists WinFlash WinGetCaretPos ' +
+        'WinGetClassList WinGetClientSize WinGetHandle WinGetPos ' +
+        'WinGetProcess WinGetState WinGetText WinGetTitle WinKill ' +
+        'WinList WinMenuSelectItem WinMinimizeAll WinMinimizeAllUndo ' +
+        'WinMove WinSetOnTop WinSetState WinSetTitle WinSetTrans ' +
+        'WinWait WinWaitActive WinWaitClose WinWaitNotActive ' +
+        'Array1DToHistogram ArrayAdd ArrayBinarySearch ' +
+        'ArrayColDelete ArrayColInsert ArrayCombinations ' +
+        'ArrayConcatenate ArrayDelete ArrayDisplay ArrayExtract ' +
+        'ArrayFindAll ArrayInsert ArrayMax ArrayMaxIndex ArrayMin ' +
+        'ArrayMinIndex ArrayPermute ArrayPop ArrayPush ' +
+        'ArrayReverse ArraySearch ArrayShuffle ArraySort ArraySwap ' +
+        'ArrayToClip ArrayToString ArrayTranspose ArrayTrim ' +
+        'ArrayUnique Assert ChooseColor ChooseFont ' +
+        'ClipBoard_ChangeChain ClipBoard_Close ClipBoard_CountFormats ' +
+        'ClipBoard_Empty ClipBoard_EnumFormats ClipBoard_FormatStr ' +
+        'ClipBoard_GetData ClipBoard_GetDataEx ClipBoard_GetFormatName ' +
+        'ClipBoard_GetOpenWindow ClipBoard_GetOwner ' +
+        'ClipBoard_GetPriorityFormat ClipBoard_GetSequenceNumber ' +
+        'ClipBoard_GetViewer ClipBoard_IsFormatAvailable ' +
+        'ClipBoard_Open ClipBoard_RegisterFormat ClipBoard_SetData ' +
+        'ClipBoard_SetDataEx ClipBoard_SetViewer ClipPutFile ' +
+        'ColorConvertHSLtoRGB ColorConvertRGBtoHSL ColorGetBlue ' +
+        'ColorGetCOLORREF ColorGetGreen ColorGetRed ColorGetRGB ' +
+        'ColorSetCOLORREF ColorSetRGB Crypt_DecryptData ' +
+        'Crypt_DecryptFile Crypt_DeriveKey Crypt_DestroyKey ' +
+        'Crypt_EncryptData Crypt_EncryptFile Crypt_GenRandom ' +
+        'Crypt_HashData Crypt_HashFile Crypt_Shutdown Crypt_Startup ' +
+        'DateAdd DateDayOfWeek DateDaysInMonth DateDiff ' +
+        'DateIsLeapYear DateIsValid DateTimeFormat DateTimeSplit ' +
+        'DateToDayOfWeek DateToDayOfWeekISO DateToDayValue ' +
+        'DateToMonth Date_Time_CompareFileTime ' +
+        'Date_Time_DOSDateTimeToArray Date_Time_DOSDateTimeToFileTime ' +
+        'Date_Time_DOSDateTimeToStr Date_Time_DOSDateToArray ' +
+        'Date_Time_DOSDateToStr Date_Time_DOSTimeToArray ' +
+        'Date_Time_DOSTimeToStr Date_Time_EncodeFileTime ' +
+        'Date_Time_EncodeSystemTime Date_Time_FileTimeToArray ' +
+        'Date_Time_FileTimeToDOSDateTime ' +
+        'Date_Time_FileTimeToLocalFileTime Date_Time_FileTimeToStr ' +
+        'Date_Time_FileTimeToSystemTime Date_Time_GetFileTime ' +
+        'Date_Time_GetLocalTime Date_Time_GetSystemTime ' +
+        'Date_Time_GetSystemTimeAdjustment ' +
+        'Date_Time_GetSystemTimeAsFileTime Date_Time_GetSystemTimes ' +
+        'Date_Time_GetTickCount Date_Time_GetTimeZoneInformation ' +
+        'Date_Time_LocalFileTimeToFileTime Date_Time_SetFileTime ' +
+        'Date_Time_SetLocalTime Date_Time_SetSystemTime ' +
+        'Date_Time_SetSystemTimeAdjustment ' +
+        'Date_Time_SetTimeZoneInformation Date_Time_SystemTimeToArray ' +
+        'Date_Time_SystemTimeToDateStr Date_Time_SystemTimeToDateTimeStr ' +
+        'Date_Time_SystemTimeToFileTime Date_Time_SystemTimeToTimeStr ' +
+        'Date_Time_SystemTimeToTzSpecificLocalTime ' +
+        'Date_Time_TzSpecificLocalTimeToSystemTime DayValueToDate ' +
+        'DebugBugReportEnv DebugCOMError DebugOut DebugReport ' +
+        'DebugReportEx DebugReportVar DebugSetup Degree ' +
+        'EventLog__Backup EventLog__Clear EventLog__Close ' +
+        'EventLog__Count EventLog__DeregisterSource EventLog__Full ' +
+        'EventLog__Notify EventLog__Oldest EventLog__Open ' +
+        'EventLog__OpenBackup EventLog__Read EventLog__RegisterSource ' +
+        'EventLog__Report Excel_BookAttach Excel_BookClose ' +
+        'Excel_BookList Excel_BookNew Excel_BookOpen ' +
+        'Excel_BookOpenText Excel_BookSave Excel_BookSaveAs ' +
+        'Excel_Close Excel_ColumnToLetter Excel_ColumnToNumber ' +
+        'Excel_ConvertFormula Excel_Export Excel_FilterGet ' +
+        'Excel_FilterSet Excel_Open Excel_PictureAdd Excel_Print ' +
+        'Excel_RangeCopyPaste Excel_RangeDelete Excel_RangeFind ' +
+        'Excel_RangeInsert Excel_RangeLinkAddRemove Excel_RangeRead ' +
+        'Excel_RangeReplace Excel_RangeSort Excel_RangeValidate ' +
+        'Excel_RangeWrite Excel_SheetAdd Excel_SheetCopyMove ' +
+        'Excel_SheetDelete Excel_SheetList FileCountLines FileCreate ' +
+        'FileListToArray FileListToArrayRec FilePrint ' +
+        'FileReadToArray FileWriteFromArray FileWriteLog ' +
+        'FileWriteToLine FTP_Close FTP_Command FTP_Connect ' +
+        'FTP_DecodeInternetStatus FTP_DirCreate FTP_DirDelete ' +
+        'FTP_DirGetCurrent FTP_DirPutContents FTP_DirSetCurrent ' +
+        'FTP_FileClose FTP_FileDelete FTP_FileGet FTP_FileGetSize ' +
+        'FTP_FileOpen FTP_FilePut FTP_FileRead FTP_FileRename ' +
+        'FTP_FileTimeLoHiToStr FTP_FindFileClose FTP_FindFileFirst ' +
+        'FTP_FindFileNext FTP_GetLastResponseInfo FTP_ListToArray ' +
+        'FTP_ListToArray2D FTP_ListToArrayEx FTP_Open ' +
+        'FTP_ProgressDownload FTP_ProgressUpload FTP_SetStatusCallback ' +
+        'GDIPlus_ArrowCapCreate GDIPlus_ArrowCapDispose ' +
+        'GDIPlus_ArrowCapGetFillState GDIPlus_ArrowCapGetHeight ' +
+        'GDIPlus_ArrowCapGetMiddleInset GDIPlus_ArrowCapGetWidth ' +
+        'GDIPlus_ArrowCapSetFillState GDIPlus_ArrowCapSetHeight ' +
+        'GDIPlus_ArrowCapSetMiddleInset GDIPlus_ArrowCapSetWidth ' +
+        'GDIPlus_BitmapApplyEffect GDIPlus_BitmapApplyEffectEx ' +
+        'GDIPlus_BitmapCloneArea GDIPlus_BitmapConvertFormat ' +
+        'GDIPlus_BitmapCreateApplyEffect ' +
+        'GDIPlus_BitmapCreateApplyEffectEx ' +
+        'GDIPlus_BitmapCreateDIBFromBitmap GDIPlus_BitmapCreateFromFile ' +
+        'GDIPlus_BitmapCreateFromGraphics ' +
+        'GDIPlus_BitmapCreateFromHBITMAP GDIPlus_BitmapCreateFromHICON ' +
+        'GDIPlus_BitmapCreateFromHICON32 GDIPlus_BitmapCreateFromMemory ' +
+        'GDIPlus_BitmapCreateFromResource GDIPlus_BitmapCreateFromScan0 ' +
+        'GDIPlus_BitmapCreateFromStream ' +
+        'GDIPlus_BitmapCreateHBITMAPFromBitmap GDIPlus_BitmapDispose ' +
+        'GDIPlus_BitmapGetHistogram GDIPlus_BitmapGetHistogramEx ' +
+        'GDIPlus_BitmapGetHistogramSize GDIPlus_BitmapGetPixel ' +
+        'GDIPlus_BitmapLockBits GDIPlus_BitmapSetPixel ' +
+        'GDIPlus_BitmapUnlockBits GDIPlus_BrushClone ' +
+        'GDIPlus_BrushCreateSolid GDIPlus_BrushDispose ' +
+        'GDIPlus_BrushGetSolidColor GDIPlus_BrushGetType ' +
+        'GDIPlus_BrushSetSolidColor GDIPlus_ColorMatrixCreate ' +
+        'GDIPlus_ColorMatrixCreateGrayScale ' +
+        'GDIPlus_ColorMatrixCreateNegative ' +
+        'GDIPlus_ColorMatrixCreateSaturation ' +
+        'GDIPlus_ColorMatrixCreateScale ' +
+        'GDIPlus_ColorMatrixCreateTranslate GDIPlus_CustomLineCapClone ' +
+        'GDIPlus_CustomLineCapCreate GDIPlus_CustomLineCapDispose ' +
+        'GDIPlus_CustomLineCapGetStrokeCaps ' +
+        'GDIPlus_CustomLineCapSetStrokeCaps GDIPlus_Decoders ' +
+        'GDIPlus_DecodersGetCount GDIPlus_DecodersGetSize ' +
+        'GDIPlus_DrawImageFX GDIPlus_DrawImageFXEx ' +
+        'GDIPlus_DrawImagePoints GDIPlus_EffectCreate ' +
+        'GDIPlus_EffectCreateBlur GDIPlus_EffectCreateBrightnessContrast ' +
+        'GDIPlus_EffectCreateColorBalance GDIPlus_EffectCreateColorCurve ' +
+        'GDIPlus_EffectCreateColorLUT GDIPlus_EffectCreateColorMatrix ' +
+        'GDIPlus_EffectCreateHueSaturationLightness ' +
+        'GDIPlus_EffectCreateLevels GDIPlus_EffectCreateRedEyeCorrection ' +
+        'GDIPlus_EffectCreateSharpen GDIPlus_EffectCreateTint ' +
+        'GDIPlus_EffectDispose GDIPlus_EffectGetParameters ' +
+        'GDIPlus_EffectSetParameters GDIPlus_Encoders ' +
+        'GDIPlus_EncodersGetCLSID GDIPlus_EncodersGetCount ' +
+        'GDIPlus_EncodersGetParamList GDIPlus_EncodersGetParamListSize ' +
+        'GDIPlus_EncodersGetSize GDIPlus_FontCreate ' +
+        'GDIPlus_FontDispose GDIPlus_FontFamilyCreate ' +
+        'GDIPlus_FontFamilyCreateFromCollection ' +
+        'GDIPlus_FontFamilyDispose GDIPlus_FontFamilyGetCellAscent ' +
+        'GDIPlus_FontFamilyGetCellDescent GDIPlus_FontFamilyGetEmHeight ' +
+        'GDIPlus_FontFamilyGetLineSpacing GDIPlus_FontGetHeight ' +
+        'GDIPlus_FontPrivateAddFont GDIPlus_FontPrivateAddMemoryFont ' +
+        'GDIPlus_FontPrivateCollectionDispose ' +
+        'GDIPlus_FontPrivateCreateCollection GDIPlus_GraphicsClear ' +
+        'GDIPlus_GraphicsCreateFromHDC GDIPlus_GraphicsCreateFromHWND ' +
+        'GDIPlus_GraphicsDispose GDIPlus_GraphicsDrawArc ' +
+        'GDIPlus_GraphicsDrawBezier GDIPlus_GraphicsDrawClosedCurve ' +
+        'GDIPlus_GraphicsDrawClosedCurve2 GDIPlus_GraphicsDrawCurve ' +
+        'GDIPlus_GraphicsDrawCurve2 GDIPlus_GraphicsDrawEllipse ' +
+        'GDIPlus_GraphicsDrawImage GDIPlus_GraphicsDrawImagePointsRect ' +
+        'GDIPlus_GraphicsDrawImageRect GDIPlus_GraphicsDrawImageRectRect ' +
+        'GDIPlus_GraphicsDrawLine GDIPlus_GraphicsDrawPath ' +
+        'GDIPlus_GraphicsDrawPie GDIPlus_GraphicsDrawPolygon ' +
+        'GDIPlus_GraphicsDrawRect GDIPlus_GraphicsDrawString ' +
+        'GDIPlus_GraphicsDrawStringEx GDIPlus_GraphicsFillClosedCurve ' +
+        'GDIPlus_GraphicsFillClosedCurve2 GDIPlus_GraphicsFillEllipse ' +
+        'GDIPlus_GraphicsFillPath GDIPlus_GraphicsFillPie ' +
+        'GDIPlus_GraphicsFillPolygon GDIPlus_GraphicsFillRect ' +
+        'GDIPlus_GraphicsFillRegion GDIPlus_GraphicsGetCompositingMode ' +
+        'GDIPlus_GraphicsGetCompositingQuality GDIPlus_GraphicsGetDC ' +
+        'GDIPlus_GraphicsGetInterpolationMode ' +
+        'GDIPlus_GraphicsGetSmoothingMode GDIPlus_GraphicsGetTransform ' +
+        'GDIPlus_GraphicsMeasureCharacterRanges ' +
+        'GDIPlus_GraphicsMeasureString GDIPlus_GraphicsReleaseDC ' +
+        'GDIPlus_GraphicsResetClip GDIPlus_GraphicsResetTransform ' +
+        'GDIPlus_GraphicsRestore GDIPlus_GraphicsRotateTransform ' +
+        'GDIPlus_GraphicsSave GDIPlus_GraphicsScaleTransform ' +
+        'GDIPlus_GraphicsSetClipPath GDIPlus_GraphicsSetClipRect ' +
+        'GDIPlus_GraphicsSetClipRegion ' +
+        'GDIPlus_GraphicsSetCompositingMode ' +
+        'GDIPlus_GraphicsSetCompositingQuality ' +
+        'GDIPlus_GraphicsSetInterpolationMode ' +
+        'GDIPlus_GraphicsSetPixelOffsetMode ' +
+        'GDIPlus_GraphicsSetSmoothingMode ' +
+        'GDIPlus_GraphicsSetTextRenderingHint ' +
+        'GDIPlus_GraphicsSetTransform GDIPlus_GraphicsTransformPoints ' +
+        'GDIPlus_GraphicsTranslateTransform GDIPlus_HatchBrushCreate ' +
+        'GDIPlus_HICONCreateFromBitmap GDIPlus_ImageAttributesCreate ' +
+        'GDIPlus_ImageAttributesDispose ' +
+        'GDIPlus_ImageAttributesSetColorKeys ' +
+        'GDIPlus_ImageAttributesSetColorMatrix GDIPlus_ImageDispose ' +
+        'GDIPlus_ImageGetDimension GDIPlus_ImageGetFlags ' +
+        'GDIPlus_ImageGetGraphicsContext GDIPlus_ImageGetHeight ' +
+        'GDIPlus_ImageGetHorizontalResolution ' +
+        'GDIPlus_ImageGetPixelFormat GDIPlus_ImageGetRawFormat ' +
+        'GDIPlus_ImageGetThumbnail GDIPlus_ImageGetType ' +
+        'GDIPlus_ImageGetVerticalResolution GDIPlus_ImageGetWidth ' +
+        'GDIPlus_ImageLoadFromFile GDIPlus_ImageLoadFromStream ' +
+        'GDIPlus_ImageResize GDIPlus_ImageRotateFlip ' +
+        'GDIPlus_ImageSaveToFile GDIPlus_ImageSaveToFileEx ' +
+        'GDIPlus_ImageSaveToStream GDIPlus_ImageScale ' +
+        'GDIPlus_LineBrushCreate GDIPlus_LineBrushCreateFromRect ' +
+        'GDIPlus_LineBrushCreateFromRectWithAngle ' +
+        'GDIPlus_LineBrushGetColors GDIPlus_LineBrushGetRect ' +
+        'GDIPlus_LineBrushMultiplyTransform ' +
+        'GDIPlus_LineBrushResetTransform GDIPlus_LineBrushSetBlend ' +
+        'GDIPlus_LineBrushSetColors GDIPlus_LineBrushSetGammaCorrection ' +
+        'GDIPlus_LineBrushSetLinearBlend GDIPlus_LineBrushSetPresetBlend ' +
+        'GDIPlus_LineBrushSetSigmaBlend GDIPlus_LineBrushSetTransform ' +
+        'GDIPlus_MatrixClone GDIPlus_MatrixCreate ' +
+        'GDIPlus_MatrixDispose GDIPlus_MatrixGetElements ' +
+        'GDIPlus_MatrixInvert GDIPlus_MatrixMultiply ' +
+        'GDIPlus_MatrixRotate GDIPlus_MatrixScale ' +
+        'GDIPlus_MatrixSetElements GDIPlus_MatrixShear ' +
+        'GDIPlus_MatrixTransformPoints GDIPlus_MatrixTranslate ' +
+        'GDIPlus_PaletteInitialize GDIPlus_ParamAdd GDIPlus_ParamInit ' +
+        'GDIPlus_ParamSize GDIPlus_PathAddArc GDIPlus_PathAddBezier ' +
+        'GDIPlus_PathAddClosedCurve GDIPlus_PathAddClosedCurve2 ' +
+        'GDIPlus_PathAddCurve GDIPlus_PathAddCurve2 ' +
+        'GDIPlus_PathAddCurve3 GDIPlus_PathAddEllipse ' +
+        'GDIPlus_PathAddLine GDIPlus_PathAddLine2 GDIPlus_PathAddPath ' +
+        'GDIPlus_PathAddPie GDIPlus_PathAddPolygon ' +
+        'GDIPlus_PathAddRectangle GDIPlus_PathAddString ' +
+        'GDIPlus_PathBrushCreate GDIPlus_PathBrushCreateFromPath ' +
+        'GDIPlus_PathBrushGetCenterPoint GDIPlus_PathBrushGetFocusScales ' +
+        'GDIPlus_PathBrushGetPointCount GDIPlus_PathBrushGetRect ' +
+        'GDIPlus_PathBrushGetWrapMode GDIPlus_PathBrushMultiplyTransform ' +
+        'GDIPlus_PathBrushResetTransform GDIPlus_PathBrushSetBlend ' +
+        'GDIPlus_PathBrushSetCenterColor GDIPlus_PathBrushSetCenterPoint ' +
+        'GDIPlus_PathBrushSetFocusScales ' +
+        'GDIPlus_PathBrushSetGammaCorrection ' +
+        'GDIPlus_PathBrushSetLinearBlend GDIPlus_PathBrushSetPresetBlend ' +
+        'GDIPlus_PathBrushSetSigmaBlend ' +
+        'GDIPlus_PathBrushSetSurroundColor ' +
+        'GDIPlus_PathBrushSetSurroundColorsWithCount ' +
+        'GDIPlus_PathBrushSetTransform GDIPlus_PathBrushSetWrapMode ' +
+        'GDIPlus_PathClone GDIPlus_PathCloseFigure GDIPlus_PathCreate ' +
+        'GDIPlus_PathCreate2 GDIPlus_PathDispose GDIPlus_PathFlatten ' +
+        'GDIPlus_PathGetData GDIPlus_PathGetFillMode ' +
+        'GDIPlus_PathGetLastPoint GDIPlus_PathGetPointCount ' +
+        'GDIPlus_PathGetPoints GDIPlus_PathGetWorldBounds ' +
+        'GDIPlus_PathIsOutlineVisiblePoint GDIPlus_PathIsVisiblePoint ' +
+        'GDIPlus_PathIterCreate GDIPlus_PathIterDispose ' +
+        'GDIPlus_PathIterGetSubpathCount GDIPlus_PathIterNextMarkerPath ' +
+        'GDIPlus_PathIterNextSubpathPath GDIPlus_PathIterRewind ' +
+        'GDIPlus_PathReset GDIPlus_PathReverse GDIPlus_PathSetFillMode ' +
+        'GDIPlus_PathSetMarker GDIPlus_PathStartFigure ' +
+        'GDIPlus_PathTransform GDIPlus_PathWarp GDIPlus_PathWiden ' +
+        'GDIPlus_PathWindingModeOutline GDIPlus_PenCreate ' +
+        'GDIPlus_PenCreate2 GDIPlus_PenDispose GDIPlus_PenGetAlignment ' +
+        'GDIPlus_PenGetColor GDIPlus_PenGetCustomEndCap ' +
+        'GDIPlus_PenGetDashCap GDIPlus_PenGetDashStyle ' +
+        'GDIPlus_PenGetEndCap GDIPlus_PenGetMiterLimit ' +
+        'GDIPlus_PenGetWidth GDIPlus_PenSetAlignment ' +
+        'GDIPlus_PenSetColor GDIPlus_PenSetCustomEndCap ' +
+        'GDIPlus_PenSetDashCap GDIPlus_PenSetDashStyle ' +
+        'GDIPlus_PenSetEndCap GDIPlus_PenSetLineCap ' +
+        'GDIPlus_PenSetLineJoin GDIPlus_PenSetMiterLimit ' +
+        'GDIPlus_PenSetStartCap GDIPlus_PenSetWidth ' +
+        'GDIPlus_RectFCreate GDIPlus_RegionClone ' +
+        'GDIPlus_RegionCombinePath GDIPlus_RegionCombineRect ' +
+        'GDIPlus_RegionCombineRegion GDIPlus_RegionCreate ' +
+        'GDIPlus_RegionCreateFromPath GDIPlus_RegionCreateFromRect ' +
+        'GDIPlus_RegionDispose GDIPlus_RegionGetBounds ' +
+        'GDIPlus_RegionGetHRgn GDIPlus_RegionTransform ' +
+        'GDIPlus_RegionTranslate GDIPlus_Shutdown GDIPlus_Startup ' +
+        'GDIPlus_StringFormatCreate GDIPlus_StringFormatDispose ' +
+        'GDIPlus_StringFormatGetMeasurableCharacterRangeCount ' +
+        'GDIPlus_StringFormatSetAlign GDIPlus_StringFormatSetLineAlign ' +
+        'GDIPlus_StringFormatSetMeasurableCharacterRanges ' +
+        'GDIPlus_TextureCreate GDIPlus_TextureCreate2 ' +
+        'GDIPlus_TextureCreateIA GetIP GUICtrlAVI_Close ' +
+        'GUICtrlAVI_Create GUICtrlAVI_Destroy GUICtrlAVI_IsPlaying ' +
+        'GUICtrlAVI_Open GUICtrlAVI_OpenEx GUICtrlAVI_Play ' +
+        'GUICtrlAVI_Seek GUICtrlAVI_Show GUICtrlAVI_Stop ' +
+        'GUICtrlButton_Click GUICtrlButton_Create ' +
+        'GUICtrlButton_Destroy GUICtrlButton_Enable ' +
+        'GUICtrlButton_GetCheck GUICtrlButton_GetFocus ' +
+        'GUICtrlButton_GetIdealSize GUICtrlButton_GetImage ' +
+        'GUICtrlButton_GetImageList GUICtrlButton_GetNote ' +
+        'GUICtrlButton_GetNoteLength GUICtrlButton_GetSplitInfo ' +
+        'GUICtrlButton_GetState GUICtrlButton_GetText ' +
+        'GUICtrlButton_GetTextMargin GUICtrlButton_SetCheck ' +
+        'GUICtrlButton_SetDontClick GUICtrlButton_SetFocus ' +
+        'GUICtrlButton_SetImage GUICtrlButton_SetImageList ' +
+        'GUICtrlButton_SetNote GUICtrlButton_SetShield ' +
+        'GUICtrlButton_SetSize GUICtrlButton_SetSplitInfo ' +
+        'GUICtrlButton_SetState GUICtrlButton_SetStyle ' +
+        'GUICtrlButton_SetText GUICtrlButton_SetTextMargin ' +
+        'GUICtrlButton_Show GUICtrlComboBoxEx_AddDir ' +
+        'GUICtrlComboBoxEx_AddString GUICtrlComboBoxEx_BeginUpdate ' +
+        'GUICtrlComboBoxEx_Create GUICtrlComboBoxEx_CreateSolidBitMap ' +
+        'GUICtrlComboBoxEx_DeleteString GUICtrlComboBoxEx_Destroy ' +
+        'GUICtrlComboBoxEx_EndUpdate GUICtrlComboBoxEx_FindStringExact ' +
+        'GUICtrlComboBoxEx_GetComboBoxInfo ' +
+        'GUICtrlComboBoxEx_GetComboControl GUICtrlComboBoxEx_GetCount ' +
+        'GUICtrlComboBoxEx_GetCurSel ' +
+        'GUICtrlComboBoxEx_GetDroppedControlRect ' +
+        'GUICtrlComboBoxEx_GetDroppedControlRectEx ' +
+        'GUICtrlComboBoxEx_GetDroppedState ' +
+        'GUICtrlComboBoxEx_GetDroppedWidth ' +
+        'GUICtrlComboBoxEx_GetEditControl GUICtrlComboBoxEx_GetEditSel ' +
+        'GUICtrlComboBoxEx_GetEditText ' +
+        'GUICtrlComboBoxEx_GetExtendedStyle ' +
+        'GUICtrlComboBoxEx_GetExtendedUI GUICtrlComboBoxEx_GetImageList ' +
+        'GUICtrlComboBoxEx_GetItem GUICtrlComboBoxEx_GetItemEx ' +
+        'GUICtrlComboBoxEx_GetItemHeight GUICtrlComboBoxEx_GetItemImage ' +
+        'GUICtrlComboBoxEx_GetItemIndent ' +
+        'GUICtrlComboBoxEx_GetItemOverlayImage ' +
+        'GUICtrlComboBoxEx_GetItemParam ' +
+        'GUICtrlComboBoxEx_GetItemSelectedImage ' +
+        'GUICtrlComboBoxEx_GetItemText GUICtrlComboBoxEx_GetItemTextLen ' +
+        'GUICtrlComboBoxEx_GetList GUICtrlComboBoxEx_GetListArray ' +
+        'GUICtrlComboBoxEx_GetLocale GUICtrlComboBoxEx_GetLocaleCountry ' +
+        'GUICtrlComboBoxEx_GetLocaleLang ' +
+        'GUICtrlComboBoxEx_GetLocalePrimLang ' +
+        'GUICtrlComboBoxEx_GetLocaleSubLang ' +
+        'GUICtrlComboBoxEx_GetMinVisible GUICtrlComboBoxEx_GetTopIndex ' +
+        'GUICtrlComboBoxEx_GetUnicode GUICtrlComboBoxEx_InitStorage ' +
+        'GUICtrlComboBoxEx_InsertString GUICtrlComboBoxEx_LimitText ' +
+        'GUICtrlComboBoxEx_ReplaceEditSel GUICtrlComboBoxEx_ResetContent ' +
+        'GUICtrlComboBoxEx_SetCurSel GUICtrlComboBoxEx_SetDroppedWidth ' +
+        'GUICtrlComboBoxEx_SetEditSel GUICtrlComboBoxEx_SetEditText ' +
+        'GUICtrlComboBoxEx_SetExtendedStyle ' +
+        'GUICtrlComboBoxEx_SetExtendedUI GUICtrlComboBoxEx_SetImageList ' +
+        'GUICtrlComboBoxEx_SetItem GUICtrlComboBoxEx_SetItemEx ' +
+        'GUICtrlComboBoxEx_SetItemHeight GUICtrlComboBoxEx_SetItemImage ' +
+        'GUICtrlComboBoxEx_SetItemIndent ' +
+        'GUICtrlComboBoxEx_SetItemOverlayImage ' +
+        'GUICtrlComboBoxEx_SetItemParam ' +
+        'GUICtrlComboBoxEx_SetItemSelectedImage ' +
+        'GUICtrlComboBoxEx_SetMinVisible GUICtrlComboBoxEx_SetTopIndex ' +
+        'GUICtrlComboBoxEx_SetUnicode GUICtrlComboBoxEx_ShowDropDown ' +
+        'GUICtrlComboBox_AddDir GUICtrlComboBox_AddString ' +
+        'GUICtrlComboBox_AutoComplete GUICtrlComboBox_BeginUpdate ' +
+        'GUICtrlComboBox_Create GUICtrlComboBox_DeleteString ' +
+        'GUICtrlComboBox_Destroy GUICtrlComboBox_EndUpdate ' +
+        'GUICtrlComboBox_FindString GUICtrlComboBox_FindStringExact ' +
+        'GUICtrlComboBox_GetComboBoxInfo GUICtrlComboBox_GetCount ' +
+        'GUICtrlComboBox_GetCueBanner GUICtrlComboBox_GetCurSel ' +
+        'GUICtrlComboBox_GetDroppedControlRect ' +
+        'GUICtrlComboBox_GetDroppedControlRectEx ' +
+        'GUICtrlComboBox_GetDroppedState GUICtrlComboBox_GetDroppedWidth ' +
+        'GUICtrlComboBox_GetEditSel GUICtrlComboBox_GetEditText ' +
+        'GUICtrlComboBox_GetExtendedUI ' +
+        'GUICtrlComboBox_GetHorizontalExtent ' +
+        'GUICtrlComboBox_GetItemHeight GUICtrlComboBox_GetLBText ' +
+        'GUICtrlComboBox_GetLBTextLen GUICtrlComboBox_GetList ' +
+        'GUICtrlComboBox_GetListArray GUICtrlComboBox_GetLocale ' +
+        'GUICtrlComboBox_GetLocaleCountry GUICtrlComboBox_GetLocaleLang ' +
+        'GUICtrlComboBox_GetLocalePrimLang ' +
+        'GUICtrlComboBox_GetLocaleSubLang GUICtrlComboBox_GetMinVisible ' +
+        'GUICtrlComboBox_GetTopIndex GUICtrlComboBox_InitStorage ' +
+        'GUICtrlComboBox_InsertString GUICtrlComboBox_LimitText ' +
+        'GUICtrlComboBox_ReplaceEditSel GUICtrlComboBox_ResetContent ' +
+        'GUICtrlComboBox_SelectString GUICtrlComboBox_SetCueBanner ' +
+        'GUICtrlComboBox_SetCurSel GUICtrlComboBox_SetDroppedWidth ' +
+        'GUICtrlComboBox_SetEditSel GUICtrlComboBox_SetEditText ' +
+        'GUICtrlComboBox_SetExtendedUI ' +
+        'GUICtrlComboBox_SetHorizontalExtent ' +
+        'GUICtrlComboBox_SetItemHeight GUICtrlComboBox_SetMinVisible ' +
+        'GUICtrlComboBox_SetTopIndex GUICtrlComboBox_ShowDropDown ' +
+        'GUICtrlDTP_Create GUICtrlDTP_Destroy GUICtrlDTP_GetMCColor ' +
+        'GUICtrlDTP_GetMCFont GUICtrlDTP_GetMonthCal ' +
+        'GUICtrlDTP_GetRange GUICtrlDTP_GetRangeEx ' +
+        'GUICtrlDTP_GetSystemTime GUICtrlDTP_GetSystemTimeEx ' +
+        'GUICtrlDTP_SetFormat GUICtrlDTP_SetMCColor ' +
+        'GUICtrlDTP_SetMCFont GUICtrlDTP_SetRange ' +
+        'GUICtrlDTP_SetRangeEx GUICtrlDTP_SetSystemTime ' +
+        'GUICtrlDTP_SetSystemTimeEx GUICtrlEdit_AppendText ' +
+        'GUICtrlEdit_BeginUpdate GUICtrlEdit_CanUndo ' +
+        'GUICtrlEdit_CharFromPos GUICtrlEdit_Create ' +
+        'GUICtrlEdit_Destroy GUICtrlEdit_EmptyUndoBuffer ' +
+        'GUICtrlEdit_EndUpdate GUICtrlEdit_Find GUICtrlEdit_FmtLines ' +
+        'GUICtrlEdit_GetCueBanner GUICtrlEdit_GetFirstVisibleLine ' +
+        'GUICtrlEdit_GetLimitText GUICtrlEdit_GetLine ' +
+        'GUICtrlEdit_GetLineCount GUICtrlEdit_GetMargins ' +
+        'GUICtrlEdit_GetModify GUICtrlEdit_GetPasswordChar ' +
+        'GUICtrlEdit_GetRECT GUICtrlEdit_GetRECTEx GUICtrlEdit_GetSel ' +
+        'GUICtrlEdit_GetText GUICtrlEdit_GetTextLen ' +
+        'GUICtrlEdit_HideBalloonTip GUICtrlEdit_InsertText ' +
+        'GUICtrlEdit_LineFromChar GUICtrlEdit_LineIndex ' +
+        'GUICtrlEdit_LineLength GUICtrlEdit_LineScroll ' +
+        'GUICtrlEdit_PosFromChar GUICtrlEdit_ReplaceSel ' +
+        'GUICtrlEdit_Scroll GUICtrlEdit_SetCueBanner ' +
+        'GUICtrlEdit_SetLimitText GUICtrlEdit_SetMargins ' +
+        'GUICtrlEdit_SetModify GUICtrlEdit_SetPasswordChar ' +
+        'GUICtrlEdit_SetReadOnly GUICtrlEdit_SetRECT ' +
+        'GUICtrlEdit_SetRECTEx GUICtrlEdit_SetRECTNP ' +
+        'GUICtrlEdit_SetRectNPEx GUICtrlEdit_SetSel ' +
+        'GUICtrlEdit_SetTabStops GUICtrlEdit_SetText ' +
+        'GUICtrlEdit_ShowBalloonTip GUICtrlEdit_Undo ' +
+        'GUICtrlHeader_AddItem GUICtrlHeader_ClearFilter ' +
+        'GUICtrlHeader_ClearFilterAll GUICtrlHeader_Create ' +
+        'GUICtrlHeader_CreateDragImage GUICtrlHeader_DeleteItem ' +
+        'GUICtrlHeader_Destroy GUICtrlHeader_EditFilter ' +
+        'GUICtrlHeader_GetBitmapMargin GUICtrlHeader_GetImageList ' +
+        'GUICtrlHeader_GetItem GUICtrlHeader_GetItemAlign ' +
+        'GUICtrlHeader_GetItemBitmap GUICtrlHeader_GetItemCount ' +
+        'GUICtrlHeader_GetItemDisplay GUICtrlHeader_GetItemFlags ' +
+        'GUICtrlHeader_GetItemFormat GUICtrlHeader_GetItemImage ' +
+        'GUICtrlHeader_GetItemOrder GUICtrlHeader_GetItemParam ' +
+        'GUICtrlHeader_GetItemRect GUICtrlHeader_GetItemRectEx ' +
+        'GUICtrlHeader_GetItemText GUICtrlHeader_GetItemWidth ' +
+        'GUICtrlHeader_GetOrderArray GUICtrlHeader_GetUnicodeFormat ' +
+        'GUICtrlHeader_HitTest GUICtrlHeader_InsertItem ' +
+        'GUICtrlHeader_Layout GUICtrlHeader_OrderToIndex ' +
+        'GUICtrlHeader_SetBitmapMargin ' +
+        'GUICtrlHeader_SetFilterChangeTimeout ' +
+        'GUICtrlHeader_SetHotDivider GUICtrlHeader_SetImageList ' +
+        'GUICtrlHeader_SetItem GUICtrlHeader_SetItemAlign ' +
+        'GUICtrlHeader_SetItemBitmap GUICtrlHeader_SetItemDisplay ' +
+        'GUICtrlHeader_SetItemFlags GUICtrlHeader_SetItemFormat ' +
+        'GUICtrlHeader_SetItemImage GUICtrlHeader_SetItemOrder ' +
+        'GUICtrlHeader_SetItemParam GUICtrlHeader_SetItemText ' +
+        'GUICtrlHeader_SetItemWidth GUICtrlHeader_SetOrderArray ' +
+        'GUICtrlHeader_SetUnicodeFormat GUICtrlIpAddress_ClearAddress ' +
+        'GUICtrlIpAddress_Create GUICtrlIpAddress_Destroy ' +
+        'GUICtrlIpAddress_Get GUICtrlIpAddress_GetArray ' +
+        'GUICtrlIpAddress_GetEx GUICtrlIpAddress_IsBlank ' +
+        'GUICtrlIpAddress_Set GUICtrlIpAddress_SetArray ' +
+        'GUICtrlIpAddress_SetEx GUICtrlIpAddress_SetFocus ' +
+        'GUICtrlIpAddress_SetFont GUICtrlIpAddress_SetRange ' +
+        'GUICtrlIpAddress_ShowHide GUICtrlListBox_AddFile ' +
+        'GUICtrlListBox_AddString GUICtrlListBox_BeginUpdate ' +
+        'GUICtrlListBox_ClickItem GUICtrlListBox_Create ' +
+        'GUICtrlListBox_DeleteString GUICtrlListBox_Destroy ' +
+        'GUICtrlListBox_Dir GUICtrlListBox_EndUpdate ' +
+        'GUICtrlListBox_FindInText GUICtrlListBox_FindString ' +
+        'GUICtrlListBox_GetAnchorIndex GUICtrlListBox_GetCaretIndex ' +
+        'GUICtrlListBox_GetCount GUICtrlListBox_GetCurSel ' +
+        'GUICtrlListBox_GetHorizontalExtent GUICtrlListBox_GetItemData ' +
+        'GUICtrlListBox_GetItemHeight GUICtrlListBox_GetItemRect ' +
+        'GUICtrlListBox_GetItemRectEx GUICtrlListBox_GetListBoxInfo ' +
+        'GUICtrlListBox_GetLocale GUICtrlListBox_GetLocaleCountry ' +
+        'GUICtrlListBox_GetLocaleLang GUICtrlListBox_GetLocalePrimLang ' +
+        'GUICtrlListBox_GetLocaleSubLang GUICtrlListBox_GetSel ' +
+        'GUICtrlListBox_GetSelCount GUICtrlListBox_GetSelItems ' +
+        'GUICtrlListBox_GetSelItemsText GUICtrlListBox_GetText ' +
+        'GUICtrlListBox_GetTextLen GUICtrlListBox_GetTopIndex ' +
+        'GUICtrlListBox_InitStorage GUICtrlListBox_InsertString ' +
+        'GUICtrlListBox_ItemFromPoint GUICtrlListBox_ReplaceString ' +
+        'GUICtrlListBox_ResetContent GUICtrlListBox_SelectString ' +
+        'GUICtrlListBox_SelItemRange GUICtrlListBox_SelItemRangeEx ' +
+        'GUICtrlListBox_SetAnchorIndex GUICtrlListBox_SetCaretIndex ' +
+        'GUICtrlListBox_SetColumnWidth GUICtrlListBox_SetCurSel ' +
+        'GUICtrlListBox_SetHorizontalExtent GUICtrlListBox_SetItemData ' +
+        'GUICtrlListBox_SetItemHeight GUICtrlListBox_SetLocale ' +
+        'GUICtrlListBox_SetSel GUICtrlListBox_SetTabStops ' +
+        'GUICtrlListBox_SetTopIndex GUICtrlListBox_Sort ' +
+        'GUICtrlListBox_SwapString GUICtrlListBox_UpdateHScroll ' +
+        'GUICtrlListView_AddArray GUICtrlListView_AddColumn ' +
+        'GUICtrlListView_AddItem GUICtrlListView_AddSubItem ' +
+        'GUICtrlListView_ApproximateViewHeight ' +
+        'GUICtrlListView_ApproximateViewRect ' +
+        'GUICtrlListView_ApproximateViewWidth GUICtrlListView_Arrange ' +
+        'GUICtrlListView_BeginUpdate GUICtrlListView_CancelEditLabel ' +
+        'GUICtrlListView_ClickItem GUICtrlListView_CopyItems ' +
+        'GUICtrlListView_Create GUICtrlListView_CreateDragImage ' +
+        'GUICtrlListView_CreateSolidBitMap ' +
+        'GUICtrlListView_DeleteAllItems GUICtrlListView_DeleteColumn ' +
+        'GUICtrlListView_DeleteItem GUICtrlListView_DeleteItemsSelected ' +
+        'GUICtrlListView_Destroy GUICtrlListView_DrawDragImage ' +
+        'GUICtrlListView_EditLabel GUICtrlListView_EnableGroupView ' +
+        'GUICtrlListView_EndUpdate GUICtrlListView_EnsureVisible ' +
+        'GUICtrlListView_FindInText GUICtrlListView_FindItem ' +
+        'GUICtrlListView_FindNearest GUICtrlListView_FindParam ' +
+        'GUICtrlListView_FindText GUICtrlListView_GetBkColor ' +
+        'GUICtrlListView_GetBkImage GUICtrlListView_GetCallbackMask ' +
+        'GUICtrlListView_GetColumn GUICtrlListView_GetColumnCount ' +
+        'GUICtrlListView_GetColumnOrder ' +
+        'GUICtrlListView_GetColumnOrderArray ' +
+        'GUICtrlListView_GetColumnWidth GUICtrlListView_GetCounterPage ' +
+        'GUICtrlListView_GetEditControl ' +
+        'GUICtrlListView_GetExtendedListViewStyle ' +
+        'GUICtrlListView_GetFocusedGroup GUICtrlListView_GetGroupCount ' +
+        'GUICtrlListView_GetGroupInfo ' +
+        'GUICtrlListView_GetGroupInfoByIndex ' +
+        'GUICtrlListView_GetGroupRect ' +
+        'GUICtrlListView_GetGroupViewEnabled GUICtrlListView_GetHeader ' +
+        'GUICtrlListView_GetHotCursor GUICtrlListView_GetHotItem ' +
+        'GUICtrlListView_GetHoverTime GUICtrlListView_GetImageList ' +
+        'GUICtrlListView_GetISearchString GUICtrlListView_GetItem ' +
+        'GUICtrlListView_GetItemChecked GUICtrlListView_GetItemCount ' +
+        'GUICtrlListView_GetItemCut GUICtrlListView_GetItemDropHilited ' +
+        'GUICtrlListView_GetItemEx GUICtrlListView_GetItemFocused ' +
+        'GUICtrlListView_GetItemGroupID GUICtrlListView_GetItemImage ' +
+        'GUICtrlListView_GetItemIndent GUICtrlListView_GetItemParam ' +
+        'GUICtrlListView_GetItemPosition ' +
+        'GUICtrlListView_GetItemPositionX ' +
+        'GUICtrlListView_GetItemPositionY GUICtrlListView_GetItemRect ' +
+        'GUICtrlListView_GetItemRectEx GUICtrlListView_GetItemSelected ' +
+        'GUICtrlListView_GetItemSpacing GUICtrlListView_GetItemSpacingX ' +
+        'GUICtrlListView_GetItemSpacingY GUICtrlListView_GetItemState ' +
+        'GUICtrlListView_GetItemStateImage GUICtrlListView_GetItemText ' +
+        'GUICtrlListView_GetItemTextArray ' +
+        'GUICtrlListView_GetItemTextString GUICtrlListView_GetNextItem ' +
+        'GUICtrlListView_GetNumberOfWorkAreas GUICtrlListView_GetOrigin ' +
+        'GUICtrlListView_GetOriginX GUICtrlListView_GetOriginY ' +
+        'GUICtrlListView_GetOutlineColor ' +
+        'GUICtrlListView_GetSelectedColumn ' +
+        'GUICtrlListView_GetSelectedCount ' +
+        'GUICtrlListView_GetSelectedIndices ' +
+        'GUICtrlListView_GetSelectionMark GUICtrlListView_GetStringWidth ' +
+        'GUICtrlListView_GetSubItemRect GUICtrlListView_GetTextBkColor ' +
+        'GUICtrlListView_GetTextColor GUICtrlListView_GetToolTips ' +
+        'GUICtrlListView_GetTopIndex GUICtrlListView_GetUnicodeFormat ' +
+        'GUICtrlListView_GetView GUICtrlListView_GetViewDetails ' +
+        'GUICtrlListView_GetViewLarge GUICtrlListView_GetViewList ' +
+        'GUICtrlListView_GetViewRect GUICtrlListView_GetViewSmall ' +
+        'GUICtrlListView_GetViewTile GUICtrlListView_HideColumn ' +
+        'GUICtrlListView_HitTest GUICtrlListView_InsertColumn ' +
+        'GUICtrlListView_InsertGroup GUICtrlListView_InsertItem ' +
+        'GUICtrlListView_JustifyColumn GUICtrlListView_MapIDToIndex ' +
+        'GUICtrlListView_MapIndexToID GUICtrlListView_RedrawItems ' +
+        'GUICtrlListView_RegisterSortCallBack ' +
+        'GUICtrlListView_RemoveAllGroups GUICtrlListView_RemoveGroup ' +
+        'GUICtrlListView_Scroll GUICtrlListView_SetBkColor ' +
+        'GUICtrlListView_SetBkImage GUICtrlListView_SetCallBackMask ' +
+        'GUICtrlListView_SetColumn GUICtrlListView_SetColumnOrder ' +
+        'GUICtrlListView_SetColumnOrderArray ' +
+        'GUICtrlListView_SetColumnWidth ' +
+        'GUICtrlListView_SetExtendedListViewStyle ' +
+        'GUICtrlListView_SetGroupInfo GUICtrlListView_SetHotItem ' +
+        'GUICtrlListView_SetHoverTime GUICtrlListView_SetIconSpacing ' +
+        'GUICtrlListView_SetImageList GUICtrlListView_SetItem ' +
+        'GUICtrlListView_SetItemChecked GUICtrlListView_SetItemCount ' +
+        'GUICtrlListView_SetItemCut GUICtrlListView_SetItemDropHilited ' +
+        'GUICtrlListView_SetItemEx GUICtrlListView_SetItemFocused ' +
+        'GUICtrlListView_SetItemGroupID GUICtrlListView_SetItemImage ' +
+        'GUICtrlListView_SetItemIndent GUICtrlListView_SetItemParam ' +
+        'GUICtrlListView_SetItemPosition ' +
+        'GUICtrlListView_SetItemPosition32 ' +
+        'GUICtrlListView_SetItemSelected GUICtrlListView_SetItemState ' +
+        'GUICtrlListView_SetItemStateImage GUICtrlListView_SetItemText ' +
+        'GUICtrlListView_SetOutlineColor ' +
+        'GUICtrlListView_SetSelectedColumn ' +
+        'GUICtrlListView_SetSelectionMark GUICtrlListView_SetTextBkColor ' +
+        'GUICtrlListView_SetTextColor GUICtrlListView_SetToolTips ' +
+        'GUICtrlListView_SetUnicodeFormat GUICtrlListView_SetView ' +
+        'GUICtrlListView_SetWorkAreas GUICtrlListView_SimpleSort ' +
+        'GUICtrlListView_SortItems GUICtrlListView_SubItemHitTest ' +
+        'GUICtrlListView_UnRegisterSortCallBack GUICtrlMenu_AddMenuItem ' +
+        'GUICtrlMenu_AppendMenu GUICtrlMenu_CalculatePopupWindowPosition ' +
+        'GUICtrlMenu_CheckMenuItem GUICtrlMenu_CheckRadioItem ' +
+        'GUICtrlMenu_CreateMenu GUICtrlMenu_CreatePopup ' +
+        'GUICtrlMenu_DeleteMenu GUICtrlMenu_DestroyMenu ' +
+        'GUICtrlMenu_DrawMenuBar GUICtrlMenu_EnableMenuItem ' +
+        'GUICtrlMenu_FindItem GUICtrlMenu_FindParent ' +
+        'GUICtrlMenu_GetItemBmp GUICtrlMenu_GetItemBmpChecked ' +
+        'GUICtrlMenu_GetItemBmpUnchecked GUICtrlMenu_GetItemChecked ' +
+        'GUICtrlMenu_GetItemCount GUICtrlMenu_GetItemData ' +
+        'GUICtrlMenu_GetItemDefault GUICtrlMenu_GetItemDisabled ' +
+        'GUICtrlMenu_GetItemEnabled GUICtrlMenu_GetItemGrayed ' +
+        'GUICtrlMenu_GetItemHighlighted GUICtrlMenu_GetItemID ' +
+        'GUICtrlMenu_GetItemInfo GUICtrlMenu_GetItemRect ' +
+        'GUICtrlMenu_GetItemRectEx GUICtrlMenu_GetItemState ' +
+        'GUICtrlMenu_GetItemStateEx GUICtrlMenu_GetItemSubMenu ' +
+        'GUICtrlMenu_GetItemText GUICtrlMenu_GetItemType ' +
+        'GUICtrlMenu_GetMenu GUICtrlMenu_GetMenuBackground ' +
+        'GUICtrlMenu_GetMenuBarInfo GUICtrlMenu_GetMenuContextHelpID ' +
+        'GUICtrlMenu_GetMenuData GUICtrlMenu_GetMenuDefaultItem ' +
+        'GUICtrlMenu_GetMenuHeight GUICtrlMenu_GetMenuInfo ' +
+        'GUICtrlMenu_GetMenuStyle GUICtrlMenu_GetSystemMenu ' +
+        'GUICtrlMenu_InsertMenuItem GUICtrlMenu_InsertMenuItemEx ' +
+        'GUICtrlMenu_IsMenu GUICtrlMenu_LoadMenu ' +
+        'GUICtrlMenu_MapAccelerator GUICtrlMenu_MenuItemFromPoint ' +
+        'GUICtrlMenu_RemoveMenu GUICtrlMenu_SetItemBitmaps ' +
+        'GUICtrlMenu_SetItemBmp GUICtrlMenu_SetItemBmpChecked ' +
+        'GUICtrlMenu_SetItemBmpUnchecked GUICtrlMenu_SetItemChecked ' +
+        'GUICtrlMenu_SetItemData GUICtrlMenu_SetItemDefault ' +
+        'GUICtrlMenu_SetItemDisabled GUICtrlMenu_SetItemEnabled ' +
+        'GUICtrlMenu_SetItemGrayed GUICtrlMenu_SetItemHighlighted ' +
+        'GUICtrlMenu_SetItemID GUICtrlMenu_SetItemInfo ' +
+        'GUICtrlMenu_SetItemState GUICtrlMenu_SetItemSubMenu ' +
+        'GUICtrlMenu_SetItemText GUICtrlMenu_SetItemType ' +
+        'GUICtrlMenu_SetMenu GUICtrlMenu_SetMenuBackground ' +
+        'GUICtrlMenu_SetMenuContextHelpID GUICtrlMenu_SetMenuData ' +
+        'GUICtrlMenu_SetMenuDefaultItem GUICtrlMenu_SetMenuHeight ' +
+        'GUICtrlMenu_SetMenuInfo GUICtrlMenu_SetMenuStyle ' +
+        'GUICtrlMenu_TrackPopupMenu GUICtrlMonthCal_Create ' +
+        'GUICtrlMonthCal_Destroy GUICtrlMonthCal_GetCalendarBorder ' +
+        'GUICtrlMonthCal_GetCalendarCount GUICtrlMonthCal_GetColor ' +
+        'GUICtrlMonthCal_GetColorArray GUICtrlMonthCal_GetCurSel ' +
+        'GUICtrlMonthCal_GetCurSelStr GUICtrlMonthCal_GetFirstDOW ' +
+        'GUICtrlMonthCal_GetFirstDOWStr GUICtrlMonthCal_GetMaxSelCount ' +
+        'GUICtrlMonthCal_GetMaxTodayWidth ' +
+        'GUICtrlMonthCal_GetMinReqHeight GUICtrlMonthCal_GetMinReqRect ' +
+        'GUICtrlMonthCal_GetMinReqRectArray ' +
+        'GUICtrlMonthCal_GetMinReqWidth GUICtrlMonthCal_GetMonthDelta ' +
+        'GUICtrlMonthCal_GetMonthRange GUICtrlMonthCal_GetMonthRangeMax ' +
+        'GUICtrlMonthCal_GetMonthRangeMaxStr ' +
+        'GUICtrlMonthCal_GetMonthRangeMin ' +
+        'GUICtrlMonthCal_GetMonthRangeMinStr ' +
+        'GUICtrlMonthCal_GetMonthRangeSpan GUICtrlMonthCal_GetRange ' +
+        'GUICtrlMonthCal_GetRangeMax GUICtrlMonthCal_GetRangeMaxStr ' +
+        'GUICtrlMonthCal_GetRangeMin GUICtrlMonthCal_GetRangeMinStr ' +
+        'GUICtrlMonthCal_GetSelRange GUICtrlMonthCal_GetSelRangeMax ' +
+        'GUICtrlMonthCal_GetSelRangeMaxStr ' +
+        'GUICtrlMonthCal_GetSelRangeMin ' +
+        'GUICtrlMonthCal_GetSelRangeMinStr GUICtrlMonthCal_GetToday ' +
+        'GUICtrlMonthCal_GetTodayStr GUICtrlMonthCal_GetUnicodeFormat ' +
+        'GUICtrlMonthCal_HitTest GUICtrlMonthCal_SetCalendarBorder ' +
+        'GUICtrlMonthCal_SetColor GUICtrlMonthCal_SetCurSel ' +
+        'GUICtrlMonthCal_SetDayState GUICtrlMonthCal_SetFirstDOW ' +
+        'GUICtrlMonthCal_SetMaxSelCount GUICtrlMonthCal_SetMonthDelta ' +
+        'GUICtrlMonthCal_SetRange GUICtrlMonthCal_SetSelRange ' +
+        'GUICtrlMonthCal_SetToday GUICtrlMonthCal_SetUnicodeFormat ' +
+        'GUICtrlRebar_AddBand GUICtrlRebar_AddToolBarBand ' +
+        'GUICtrlRebar_BeginDrag GUICtrlRebar_Create ' +
+        'GUICtrlRebar_DeleteBand GUICtrlRebar_Destroy ' +
+        'GUICtrlRebar_DragMove GUICtrlRebar_EndDrag ' +
+        'GUICtrlRebar_GetBandBackColor GUICtrlRebar_GetBandBorders ' +
+        'GUICtrlRebar_GetBandBordersEx GUICtrlRebar_GetBandChildHandle ' +
+        'GUICtrlRebar_GetBandChildSize GUICtrlRebar_GetBandCount ' +
+        'GUICtrlRebar_GetBandForeColor GUICtrlRebar_GetBandHeaderSize ' +
+        'GUICtrlRebar_GetBandID GUICtrlRebar_GetBandIdealSize ' +
+        'GUICtrlRebar_GetBandLength GUICtrlRebar_GetBandLParam ' +
+        'GUICtrlRebar_GetBandMargins GUICtrlRebar_GetBandMarginsEx ' +
+        'GUICtrlRebar_GetBandRect GUICtrlRebar_GetBandRectEx ' +
+        'GUICtrlRebar_GetBandStyle GUICtrlRebar_GetBandStyleBreak ' +
+        'GUICtrlRebar_GetBandStyleChildEdge ' +
+        'GUICtrlRebar_GetBandStyleFixedBMP ' +
+        'GUICtrlRebar_GetBandStyleFixedSize ' +
+        'GUICtrlRebar_GetBandStyleGripperAlways ' +
+        'GUICtrlRebar_GetBandStyleHidden ' +
+        'GUICtrlRebar_GetBandStyleHideTitle ' +
+        'GUICtrlRebar_GetBandStyleNoGripper ' +
+        'GUICtrlRebar_GetBandStyleTopAlign ' +
+        'GUICtrlRebar_GetBandStyleUseChevron ' +
+        'GUICtrlRebar_GetBandStyleVariableHeight ' +
+        'GUICtrlRebar_GetBandText GUICtrlRebar_GetBarHeight ' +
+        'GUICtrlRebar_GetBarInfo GUICtrlRebar_GetBKColor ' +
+        'GUICtrlRebar_GetColorScheme GUICtrlRebar_GetRowCount ' +
+        'GUICtrlRebar_GetRowHeight GUICtrlRebar_GetTextColor ' +
+        'GUICtrlRebar_GetToolTips GUICtrlRebar_GetUnicodeFormat ' +
+        'GUICtrlRebar_HitTest GUICtrlRebar_IDToIndex ' +
+        'GUICtrlRebar_MaximizeBand GUICtrlRebar_MinimizeBand ' +
+        'GUICtrlRebar_MoveBand GUICtrlRebar_SetBandBackColor ' +
+        'GUICtrlRebar_SetBandForeColor GUICtrlRebar_SetBandHeaderSize ' +
+        'GUICtrlRebar_SetBandID GUICtrlRebar_SetBandIdealSize ' +
+        'GUICtrlRebar_SetBandLength GUICtrlRebar_SetBandLParam ' +
+        'GUICtrlRebar_SetBandStyle GUICtrlRebar_SetBandStyleBreak ' +
+        'GUICtrlRebar_SetBandStyleChildEdge ' +
+        'GUICtrlRebar_SetBandStyleFixedBMP ' +
+        'GUICtrlRebar_SetBandStyleFixedSize ' +
+        'GUICtrlRebar_SetBandStyleGripperAlways ' +
+        'GUICtrlRebar_SetBandStyleHidden ' +
+        'GUICtrlRebar_SetBandStyleHideTitle ' +
+        'GUICtrlRebar_SetBandStyleNoGripper ' +
+        'GUICtrlRebar_SetBandStyleTopAlign ' +
+        'GUICtrlRebar_SetBandStyleUseChevron ' +
+        'GUICtrlRebar_SetBandStyleVariableHeight ' +
+        'GUICtrlRebar_SetBandText GUICtrlRebar_SetBarInfo ' +
+        'GUICtrlRebar_SetBKColor GUICtrlRebar_SetColorScheme ' +
+        'GUICtrlRebar_SetTextColor GUICtrlRebar_SetToolTips ' +
+        'GUICtrlRebar_SetUnicodeFormat GUICtrlRebar_ShowBand ' +
+        'GUICtrlRichEdit_AppendText GUICtrlRichEdit_AutoDetectURL ' +
+        'GUICtrlRichEdit_CanPaste GUICtrlRichEdit_CanPasteSpecial ' +
+        'GUICtrlRichEdit_CanRedo GUICtrlRichEdit_CanUndo ' +
+        'GUICtrlRichEdit_ChangeFontSize GUICtrlRichEdit_Copy ' +
+        'GUICtrlRichEdit_Create GUICtrlRichEdit_Cut ' +
+        'GUICtrlRichEdit_Deselect GUICtrlRichEdit_Destroy ' +
+        'GUICtrlRichEdit_EmptyUndoBuffer GUICtrlRichEdit_FindText ' +
+        'GUICtrlRichEdit_FindTextInRange GUICtrlRichEdit_GetBkColor ' +
+        'GUICtrlRichEdit_GetCharAttributes ' +
+        'GUICtrlRichEdit_GetCharBkColor GUICtrlRichEdit_GetCharColor ' +
+        'GUICtrlRichEdit_GetCharPosFromXY ' +
+        'GUICtrlRichEdit_GetCharPosOfNextWord ' +
+        'GUICtrlRichEdit_GetCharPosOfPreviousWord ' +
+        'GUICtrlRichEdit_GetCharWordBreakInfo ' +
+        'GUICtrlRichEdit_GetFirstCharPosOnLine GUICtrlRichEdit_GetFont ' +
+        'GUICtrlRichEdit_GetLineCount GUICtrlRichEdit_GetLineLength ' +
+        'GUICtrlRichEdit_GetLineNumberFromCharPos ' +
+        'GUICtrlRichEdit_GetNextRedo GUICtrlRichEdit_GetNextUndo ' +
+        'GUICtrlRichEdit_GetNumberOfFirstVisibleLine ' +
+        'GUICtrlRichEdit_GetParaAlignment ' +
+        'GUICtrlRichEdit_GetParaAttributes GUICtrlRichEdit_GetParaBorder ' +
+        'GUICtrlRichEdit_GetParaIndents GUICtrlRichEdit_GetParaNumbering ' +
+        'GUICtrlRichEdit_GetParaShading GUICtrlRichEdit_GetParaSpacing ' +
+        'GUICtrlRichEdit_GetParaTabStops GUICtrlRichEdit_GetPasswordChar ' +
+        'GUICtrlRichEdit_GetRECT GUICtrlRichEdit_GetScrollPos ' +
+        'GUICtrlRichEdit_GetSel GUICtrlRichEdit_GetSelAA ' +
+        'GUICtrlRichEdit_GetSelText GUICtrlRichEdit_GetSpaceUnit ' +
+        'GUICtrlRichEdit_GetText GUICtrlRichEdit_GetTextInLine ' +
+        'GUICtrlRichEdit_GetTextInRange GUICtrlRichEdit_GetTextLength ' +
+        'GUICtrlRichEdit_GetVersion GUICtrlRichEdit_GetXYFromCharPos ' +
+        'GUICtrlRichEdit_GetZoom GUICtrlRichEdit_GotoCharPos ' +
+        'GUICtrlRichEdit_HideSelection GUICtrlRichEdit_InsertText ' +
+        'GUICtrlRichEdit_IsModified GUICtrlRichEdit_IsTextSelected ' +
+        'GUICtrlRichEdit_Paste GUICtrlRichEdit_PasteSpecial ' +
+        'GUICtrlRichEdit_PauseRedraw GUICtrlRichEdit_Redo ' +
+        'GUICtrlRichEdit_ReplaceText GUICtrlRichEdit_ResumeRedraw ' +
+        'GUICtrlRichEdit_ScrollLineOrPage GUICtrlRichEdit_ScrollLines ' +
+        'GUICtrlRichEdit_ScrollToCaret GUICtrlRichEdit_SetBkColor ' +
+        'GUICtrlRichEdit_SetCharAttributes ' +
+        'GUICtrlRichEdit_SetCharBkColor GUICtrlRichEdit_SetCharColor ' +
+        'GUICtrlRichEdit_SetEventMask GUICtrlRichEdit_SetFont ' +
+        'GUICtrlRichEdit_SetLimitOnText GUICtrlRichEdit_SetModified ' +
+        'GUICtrlRichEdit_SetParaAlignment ' +
+        'GUICtrlRichEdit_SetParaAttributes GUICtrlRichEdit_SetParaBorder ' +
+        'GUICtrlRichEdit_SetParaIndents GUICtrlRichEdit_SetParaNumbering ' +
+        'GUICtrlRichEdit_SetParaShading GUICtrlRichEdit_SetParaSpacing ' +
+        'GUICtrlRichEdit_SetParaTabStops GUICtrlRichEdit_SetPasswordChar ' +
+        'GUICtrlRichEdit_SetReadOnly GUICtrlRichEdit_SetRECT ' +
+        'GUICtrlRichEdit_SetScrollPos GUICtrlRichEdit_SetSel ' +
+        'GUICtrlRichEdit_SetSpaceUnit GUICtrlRichEdit_SetTabStops ' +
+        'GUICtrlRichEdit_SetText GUICtrlRichEdit_SetUndoLimit ' +
+        'GUICtrlRichEdit_SetZoom GUICtrlRichEdit_StreamFromFile ' +
+        'GUICtrlRichEdit_StreamFromVar GUICtrlRichEdit_StreamToFile ' +
+        'GUICtrlRichEdit_StreamToVar GUICtrlRichEdit_Undo ' +
+        'GUICtrlSlider_ClearSel GUICtrlSlider_ClearTics ' +
+        'GUICtrlSlider_Create GUICtrlSlider_Destroy ' +
+        'GUICtrlSlider_GetBuddy GUICtrlSlider_GetChannelRect ' +
+        'GUICtrlSlider_GetChannelRectEx GUICtrlSlider_GetLineSize ' +
+        'GUICtrlSlider_GetLogicalTics GUICtrlSlider_GetNumTics ' +
+        'GUICtrlSlider_GetPageSize GUICtrlSlider_GetPos ' +
+        'GUICtrlSlider_GetRange GUICtrlSlider_GetRangeMax ' +
+        'GUICtrlSlider_GetRangeMin GUICtrlSlider_GetSel ' +
+        'GUICtrlSlider_GetSelEnd GUICtrlSlider_GetSelStart ' +
+        'GUICtrlSlider_GetThumbLength GUICtrlSlider_GetThumbRect ' +
+        'GUICtrlSlider_GetThumbRectEx GUICtrlSlider_GetTic ' +
+        'GUICtrlSlider_GetTicPos GUICtrlSlider_GetToolTips ' +
+        'GUICtrlSlider_GetUnicodeFormat GUICtrlSlider_SetBuddy ' +
+        'GUICtrlSlider_SetLineSize GUICtrlSlider_SetPageSize ' +
+        'GUICtrlSlider_SetPos GUICtrlSlider_SetRange ' +
+        'GUICtrlSlider_SetRangeMax GUICtrlSlider_SetRangeMin ' +
+        'GUICtrlSlider_SetSel GUICtrlSlider_SetSelEnd ' +
+        'GUICtrlSlider_SetSelStart GUICtrlSlider_SetThumbLength ' +
+        'GUICtrlSlider_SetTic GUICtrlSlider_SetTicFreq ' +
+        'GUICtrlSlider_SetTipSide GUICtrlSlider_SetToolTips ' +
+        'GUICtrlSlider_SetUnicodeFormat GUICtrlStatusBar_Create ' +
+        'GUICtrlStatusBar_Destroy GUICtrlStatusBar_EmbedControl ' +
+        'GUICtrlStatusBar_GetBorders GUICtrlStatusBar_GetBordersHorz ' +
+        'GUICtrlStatusBar_GetBordersRect GUICtrlStatusBar_GetBordersVert ' +
+        'GUICtrlStatusBar_GetCount GUICtrlStatusBar_GetHeight ' +
+        'GUICtrlStatusBar_GetIcon GUICtrlStatusBar_GetParts ' +
+        'GUICtrlStatusBar_GetRect GUICtrlStatusBar_GetRectEx ' +
+        'GUICtrlStatusBar_GetText GUICtrlStatusBar_GetTextFlags ' +
+        'GUICtrlStatusBar_GetTextLength GUICtrlStatusBar_GetTextLengthEx ' +
+        'GUICtrlStatusBar_GetTipText GUICtrlStatusBar_GetUnicodeFormat ' +
+        'GUICtrlStatusBar_GetWidth GUICtrlStatusBar_IsSimple ' +
+        'GUICtrlStatusBar_Resize GUICtrlStatusBar_SetBkColor ' +
+        'GUICtrlStatusBar_SetIcon GUICtrlStatusBar_SetMinHeight ' +
+        'GUICtrlStatusBar_SetParts GUICtrlStatusBar_SetSimple ' +
+        'GUICtrlStatusBar_SetText GUICtrlStatusBar_SetTipText ' +
+        'GUICtrlStatusBar_SetUnicodeFormat GUICtrlStatusBar_ShowHide ' +
+        'GUICtrlTab_ActivateTab GUICtrlTab_ClickTab GUICtrlTab_Create ' +
+        'GUICtrlTab_DeleteAllItems GUICtrlTab_DeleteItem ' +
+        'GUICtrlTab_DeselectAll GUICtrlTab_Destroy GUICtrlTab_FindTab ' +
+        'GUICtrlTab_GetCurFocus GUICtrlTab_GetCurSel ' +
+        'GUICtrlTab_GetDisplayRect GUICtrlTab_GetDisplayRectEx ' +
+        'GUICtrlTab_GetExtendedStyle GUICtrlTab_GetImageList ' +
+        'GUICtrlTab_GetItem GUICtrlTab_GetItemCount ' +
+        'GUICtrlTab_GetItemImage GUICtrlTab_GetItemParam ' +
+        'GUICtrlTab_GetItemRect GUICtrlTab_GetItemRectEx ' +
+        'GUICtrlTab_GetItemState GUICtrlTab_GetItemText ' +
+        'GUICtrlTab_GetRowCount GUICtrlTab_GetToolTips ' +
+        'GUICtrlTab_GetUnicodeFormat GUICtrlTab_HighlightItem ' +
+        'GUICtrlTab_HitTest GUICtrlTab_InsertItem ' +
+        'GUICtrlTab_RemoveImage GUICtrlTab_SetCurFocus ' +
+        'GUICtrlTab_SetCurSel GUICtrlTab_SetExtendedStyle ' +
+        'GUICtrlTab_SetImageList GUICtrlTab_SetItem ' +
+        'GUICtrlTab_SetItemImage GUICtrlTab_SetItemParam ' +
+        'GUICtrlTab_SetItemSize GUICtrlTab_SetItemState ' +
+        'GUICtrlTab_SetItemText GUICtrlTab_SetMinTabWidth ' +
+        'GUICtrlTab_SetPadding GUICtrlTab_SetToolTips ' +
+        'GUICtrlTab_SetUnicodeFormat GUICtrlToolbar_AddBitmap ' +
+        'GUICtrlToolbar_AddButton GUICtrlToolbar_AddButtonSep ' +
+        'GUICtrlToolbar_AddString GUICtrlToolbar_ButtonCount ' +
+        'GUICtrlToolbar_CheckButton GUICtrlToolbar_ClickAccel ' +
+        'GUICtrlToolbar_ClickButton GUICtrlToolbar_ClickIndex ' +
+        'GUICtrlToolbar_CommandToIndex GUICtrlToolbar_Create ' +
+        'GUICtrlToolbar_Customize GUICtrlToolbar_DeleteButton ' +
+        'GUICtrlToolbar_Destroy GUICtrlToolbar_EnableButton ' +
+        'GUICtrlToolbar_FindToolbar GUICtrlToolbar_GetAnchorHighlight ' +
+        'GUICtrlToolbar_GetBitmapFlags GUICtrlToolbar_GetButtonBitmap ' +
+        'GUICtrlToolbar_GetButtonInfo GUICtrlToolbar_GetButtonInfoEx ' +
+        'GUICtrlToolbar_GetButtonParam GUICtrlToolbar_GetButtonRect ' +
+        'GUICtrlToolbar_GetButtonRectEx GUICtrlToolbar_GetButtonSize ' +
+        'GUICtrlToolbar_GetButtonState GUICtrlToolbar_GetButtonStyle ' +
+        'GUICtrlToolbar_GetButtonText GUICtrlToolbar_GetColorScheme ' +
+        'GUICtrlToolbar_GetDisabledImageList ' +
+        'GUICtrlToolbar_GetExtendedStyle GUICtrlToolbar_GetHotImageList ' +
+        'GUICtrlToolbar_GetHotItem GUICtrlToolbar_GetImageList ' +
+        'GUICtrlToolbar_GetInsertMark GUICtrlToolbar_GetInsertMarkColor ' +
+        'GUICtrlToolbar_GetMaxSize GUICtrlToolbar_GetMetrics ' +
+        'GUICtrlToolbar_GetPadding GUICtrlToolbar_GetRows ' +
+        'GUICtrlToolbar_GetString GUICtrlToolbar_GetStyle ' +
+        'GUICtrlToolbar_GetStyleAltDrag ' +
+        'GUICtrlToolbar_GetStyleCustomErase GUICtrlToolbar_GetStyleFlat ' +
+        'GUICtrlToolbar_GetStyleList GUICtrlToolbar_GetStyleRegisterDrop ' +
+        'GUICtrlToolbar_GetStyleToolTips ' +
+        'GUICtrlToolbar_GetStyleTransparent ' +
+        'GUICtrlToolbar_GetStyleWrapable GUICtrlToolbar_GetTextRows ' +
+        'GUICtrlToolbar_GetToolTips GUICtrlToolbar_GetUnicodeFormat ' +
+        'GUICtrlToolbar_HideButton GUICtrlToolbar_HighlightButton ' +
+        'GUICtrlToolbar_HitTest GUICtrlToolbar_IndexToCommand ' +
+        'GUICtrlToolbar_InsertButton GUICtrlToolbar_InsertMarkHitTest ' +
+        'GUICtrlToolbar_IsButtonChecked GUICtrlToolbar_IsButtonEnabled ' +
+        'GUICtrlToolbar_IsButtonHidden ' +
+        'GUICtrlToolbar_IsButtonHighlighted ' +
+        'GUICtrlToolbar_IsButtonIndeterminate ' +
+        'GUICtrlToolbar_IsButtonPressed GUICtrlToolbar_LoadBitmap ' +
+        'GUICtrlToolbar_LoadImages GUICtrlToolbar_MapAccelerator ' +
+        'GUICtrlToolbar_MoveButton GUICtrlToolbar_PressButton ' +
+        'GUICtrlToolbar_SetAnchorHighlight GUICtrlToolbar_SetBitmapSize ' +
+        'GUICtrlToolbar_SetButtonBitMap GUICtrlToolbar_SetButtonInfo ' +
+        'GUICtrlToolbar_SetButtonInfoEx GUICtrlToolbar_SetButtonParam ' +
+        'GUICtrlToolbar_SetButtonSize GUICtrlToolbar_SetButtonState ' +
+        'GUICtrlToolbar_SetButtonStyle GUICtrlToolbar_SetButtonText ' +
+        'GUICtrlToolbar_SetButtonWidth GUICtrlToolbar_SetCmdID ' +
+        'GUICtrlToolbar_SetColorScheme ' +
+        'GUICtrlToolbar_SetDisabledImageList ' +
+        'GUICtrlToolbar_SetDrawTextFlags GUICtrlToolbar_SetExtendedStyle ' +
+        'GUICtrlToolbar_SetHotImageList GUICtrlToolbar_SetHotItem ' +
+        'GUICtrlToolbar_SetImageList GUICtrlToolbar_SetIndent ' +
+        'GUICtrlToolbar_SetIndeterminate GUICtrlToolbar_SetInsertMark ' +
+        'GUICtrlToolbar_SetInsertMarkColor GUICtrlToolbar_SetMaxTextRows ' +
+        'GUICtrlToolbar_SetMetrics GUICtrlToolbar_SetPadding ' +
+        'GUICtrlToolbar_SetParent GUICtrlToolbar_SetRows ' +
+        'GUICtrlToolbar_SetStyle GUICtrlToolbar_SetStyleAltDrag ' +
+        'GUICtrlToolbar_SetStyleCustomErase GUICtrlToolbar_SetStyleFlat ' +
+        'GUICtrlToolbar_SetStyleList GUICtrlToolbar_SetStyleRegisterDrop ' +
+        'GUICtrlToolbar_SetStyleToolTips ' +
+        'GUICtrlToolbar_SetStyleTransparent ' +
+        'GUICtrlToolbar_SetStyleWrapable GUICtrlToolbar_SetToolTips ' +
+        'GUICtrlToolbar_SetUnicodeFormat GUICtrlToolbar_SetWindowTheme ' +
+        'GUICtrlTreeView_Add GUICtrlTreeView_AddChild ' +
+        'GUICtrlTreeView_AddChildFirst GUICtrlTreeView_AddFirst ' +
+        'GUICtrlTreeView_BeginUpdate GUICtrlTreeView_ClickItem ' +
+        'GUICtrlTreeView_Create GUICtrlTreeView_CreateDragImage ' +
+        'GUICtrlTreeView_CreateSolidBitMap GUICtrlTreeView_Delete ' +
+        'GUICtrlTreeView_DeleteAll GUICtrlTreeView_DeleteChildren ' +
+        'GUICtrlTreeView_Destroy GUICtrlTreeView_DisplayRect ' +
+        'GUICtrlTreeView_DisplayRectEx GUICtrlTreeView_EditText ' +
+        'GUICtrlTreeView_EndEdit GUICtrlTreeView_EndUpdate ' +
+        'GUICtrlTreeView_EnsureVisible GUICtrlTreeView_Expand ' +
+        'GUICtrlTreeView_ExpandedOnce GUICtrlTreeView_FindItem ' +
+        'GUICtrlTreeView_FindItemEx GUICtrlTreeView_GetBkColor ' +
+        'GUICtrlTreeView_GetBold GUICtrlTreeView_GetChecked ' +
+        'GUICtrlTreeView_GetChildCount GUICtrlTreeView_GetChildren ' +
+        'GUICtrlTreeView_GetCount GUICtrlTreeView_GetCut ' +
+        'GUICtrlTreeView_GetDropTarget GUICtrlTreeView_GetEditControl ' +
+        'GUICtrlTreeView_GetExpanded GUICtrlTreeView_GetFirstChild ' +
+        'GUICtrlTreeView_GetFirstItem GUICtrlTreeView_GetFirstVisible ' +
+        'GUICtrlTreeView_GetFocused GUICtrlTreeView_GetHeight ' +
+        'GUICtrlTreeView_GetImageIndex ' +
+        'GUICtrlTreeView_GetImageListIconHandle ' +
+        'GUICtrlTreeView_GetIndent GUICtrlTreeView_GetInsertMarkColor ' +
+        'GUICtrlTreeView_GetISearchString GUICtrlTreeView_GetItemByIndex ' +
+        'GUICtrlTreeView_GetItemHandle GUICtrlTreeView_GetItemParam ' +
+        'GUICtrlTreeView_GetLastChild GUICtrlTreeView_GetLineColor ' +
+        'GUICtrlTreeView_GetNext GUICtrlTreeView_GetNextChild ' +
+        'GUICtrlTreeView_GetNextSibling GUICtrlTreeView_GetNextVisible ' +
+        'GUICtrlTreeView_GetNormalImageList ' +
+        'GUICtrlTreeView_GetParentHandle GUICtrlTreeView_GetParentParam ' +
+        'GUICtrlTreeView_GetPrev GUICtrlTreeView_GetPrevChild ' +
+        'GUICtrlTreeView_GetPrevSibling GUICtrlTreeView_GetPrevVisible ' +
+        'GUICtrlTreeView_GetScrollTime GUICtrlTreeView_GetSelected ' +
+        'GUICtrlTreeView_GetSelectedImageIndex ' +
+        'GUICtrlTreeView_GetSelection GUICtrlTreeView_GetSiblingCount ' +
+        'GUICtrlTreeView_GetState GUICtrlTreeView_GetStateImageIndex ' +
+        'GUICtrlTreeView_GetStateImageList GUICtrlTreeView_GetText ' +
+        'GUICtrlTreeView_GetTextColor GUICtrlTreeView_GetToolTips ' +
+        'GUICtrlTreeView_GetTree GUICtrlTreeView_GetUnicodeFormat ' +
+        'GUICtrlTreeView_GetVisible GUICtrlTreeView_GetVisibleCount ' +
+        'GUICtrlTreeView_HitTest GUICtrlTreeView_HitTestEx ' +
+        'GUICtrlTreeView_HitTestItem GUICtrlTreeView_Index ' +
+        'GUICtrlTreeView_InsertItem GUICtrlTreeView_IsFirstItem ' +
+        'GUICtrlTreeView_IsParent GUICtrlTreeView_Level ' +
+        'GUICtrlTreeView_SelectItem GUICtrlTreeView_SelectItemByIndex ' +
+        'GUICtrlTreeView_SetBkColor GUICtrlTreeView_SetBold ' +
+        'GUICtrlTreeView_SetChecked GUICtrlTreeView_SetCheckedByIndex ' +
+        'GUICtrlTreeView_SetChildren GUICtrlTreeView_SetCut ' +
+        'GUICtrlTreeView_SetDropTarget GUICtrlTreeView_SetFocused ' +
+        'GUICtrlTreeView_SetHeight GUICtrlTreeView_SetIcon ' +
+        'GUICtrlTreeView_SetImageIndex GUICtrlTreeView_SetIndent ' +
+        'GUICtrlTreeView_SetInsertMark ' +
+        'GUICtrlTreeView_SetInsertMarkColor ' +
+        'GUICtrlTreeView_SetItemHeight GUICtrlTreeView_SetItemParam ' +
+        'GUICtrlTreeView_SetLineColor GUICtrlTreeView_SetNormalImageList ' +
+        'GUICtrlTreeView_SetScrollTime GUICtrlTreeView_SetSelected ' +
+        'GUICtrlTreeView_SetSelectedImageIndex GUICtrlTreeView_SetState ' +
+        'GUICtrlTreeView_SetStateImageIndex ' +
+        'GUICtrlTreeView_SetStateImageList GUICtrlTreeView_SetText ' +
+        'GUICtrlTreeView_SetTextColor GUICtrlTreeView_SetToolTips ' +
+        'GUICtrlTreeView_SetUnicodeFormat GUICtrlTreeView_Sort ' +
+        'GUIImageList_Add GUIImageList_AddBitmap GUIImageList_AddIcon ' +
+        'GUIImageList_AddMasked GUIImageList_BeginDrag ' +
+        'GUIImageList_Copy GUIImageList_Create GUIImageList_Destroy ' +
+        'GUIImageList_DestroyIcon GUIImageList_DragEnter ' +
+        'GUIImageList_DragLeave GUIImageList_DragMove ' +
+        'GUIImageList_Draw GUIImageList_DrawEx GUIImageList_Duplicate ' +
+        'GUIImageList_EndDrag GUIImageList_GetBkColor ' +
+        'GUIImageList_GetIcon GUIImageList_GetIconHeight ' +
+        'GUIImageList_GetIconSize GUIImageList_GetIconSizeEx ' +
+        'GUIImageList_GetIconWidth GUIImageList_GetImageCount ' +
+        'GUIImageList_GetImageInfoEx GUIImageList_Remove ' +
+        'GUIImageList_ReplaceIcon GUIImageList_SetBkColor ' +
+        'GUIImageList_SetIconSize GUIImageList_SetImageCount ' +
+        'GUIImageList_Swap GUIScrollBars_EnableScrollBar ' +
+        'GUIScrollBars_GetScrollBarInfoEx GUIScrollBars_GetScrollBarRect ' +
+        'GUIScrollBars_GetScrollBarRGState ' +
+        'GUIScrollBars_GetScrollBarXYLineButton ' +
+        'GUIScrollBars_GetScrollBarXYThumbBottom ' +
+        'GUIScrollBars_GetScrollBarXYThumbTop ' +
+        'GUIScrollBars_GetScrollInfo GUIScrollBars_GetScrollInfoEx ' +
+        'GUIScrollBars_GetScrollInfoMax GUIScrollBars_GetScrollInfoMin ' +
+        'GUIScrollBars_GetScrollInfoPage GUIScrollBars_GetScrollInfoPos ' +
+        'GUIScrollBars_GetScrollInfoTrackPos GUIScrollBars_GetScrollPos ' +
+        'GUIScrollBars_GetScrollRange GUIScrollBars_Init ' +
+        'GUIScrollBars_ScrollWindow GUIScrollBars_SetScrollInfo ' +
+        'GUIScrollBars_SetScrollInfoMax GUIScrollBars_SetScrollInfoMin ' +
+        'GUIScrollBars_SetScrollInfoPage GUIScrollBars_SetScrollInfoPos ' +
+        'GUIScrollBars_SetScrollRange GUIScrollBars_ShowScrollBar ' +
+        'GUIToolTip_Activate GUIToolTip_AddTool GUIToolTip_AdjustRect ' +
+        'GUIToolTip_BitsToTTF GUIToolTip_Create GUIToolTip_Deactivate ' +
+        'GUIToolTip_DelTool GUIToolTip_Destroy GUIToolTip_EnumTools ' +
+        'GUIToolTip_GetBubbleHeight GUIToolTip_GetBubbleSize ' +
+        'GUIToolTip_GetBubbleWidth GUIToolTip_GetCurrentTool ' +
+        'GUIToolTip_GetDelayTime GUIToolTip_GetMargin ' +
+        'GUIToolTip_GetMarginEx GUIToolTip_GetMaxTipWidth ' +
+        'GUIToolTip_GetText GUIToolTip_GetTipBkColor ' +
+        'GUIToolTip_GetTipTextColor GUIToolTip_GetTitleBitMap ' +
+        'GUIToolTip_GetTitleText GUIToolTip_GetToolCount ' +
+        'GUIToolTip_GetToolInfo GUIToolTip_HitTest ' +
+        'GUIToolTip_NewToolRect GUIToolTip_Pop GUIToolTip_PopUp ' +
+        'GUIToolTip_SetDelayTime GUIToolTip_SetMargin ' +
+        'GUIToolTip_SetMaxTipWidth GUIToolTip_SetTipBkColor ' +
+        'GUIToolTip_SetTipTextColor GUIToolTip_SetTitle ' +
+        'GUIToolTip_SetToolInfo GUIToolTip_SetWindowTheme ' +
+        'GUIToolTip_ToolExists GUIToolTip_ToolToArray ' +
+        'GUIToolTip_TrackActivate GUIToolTip_TrackPosition ' +
+        'GUIToolTip_Update GUIToolTip_UpdateTipText HexToString ' +
+        'IEAction IEAttach IEBodyReadHTML IEBodyReadText ' +
+        'IEBodyWriteHTML IECreate IECreateEmbedded IEDocGetObj ' +
+        'IEDocInsertHTML IEDocInsertText IEDocReadHTML ' +
+        'IEDocWriteHTML IEErrorNotify IEFormElementCheckBoxSelect ' +
+        'IEFormElementGetCollection IEFormElementGetObjByName ' +
+        'IEFormElementGetValue IEFormElementOptionSelect ' +
+        'IEFormElementRadioSelect IEFormElementSetValue ' +
+        'IEFormGetCollection IEFormGetObjByName IEFormImageClick ' +
+        'IEFormReset IEFormSubmit IEFrameGetCollection ' +
+        'IEFrameGetObjByName IEGetObjById IEGetObjByName ' +
+        'IEHeadInsertEventScript IEImgClick IEImgGetCollection ' +
+        'IEIsFrameSet IELinkClickByIndex IELinkClickByText ' +
+        'IELinkGetCollection IELoadWait IELoadWaitTimeout IENavigate ' +
+        'IEPropertyGet IEPropertySet IEQuit IETableGetCollection ' +
+        'IETableWriteToArray IETagNameAllGetCollection ' +
+        'IETagNameGetCollection IE_Example IE_Introduction ' +
+        'IE_VersionInfo INetExplorerCapable INetGetSource INetMail ' +
+        'INetSmtpMail IsPressed MathCheckDiv Max MemGlobalAlloc ' +
+        'MemGlobalFree MemGlobalLock MemGlobalSize MemGlobalUnlock ' +
+        'MemMoveMemory MemVirtualAlloc MemVirtualAllocEx ' +
+        'MemVirtualFree MemVirtualFreeEx Min MouseTrap ' +
+        'NamedPipes_CallNamedPipe NamedPipes_ConnectNamedPipe ' +
+        'NamedPipes_CreateNamedPipe NamedPipes_CreatePipe ' +
+        'NamedPipes_DisconnectNamedPipe ' +
+        'NamedPipes_GetNamedPipeHandleState NamedPipes_GetNamedPipeInfo ' +
+        'NamedPipes_PeekNamedPipe NamedPipes_SetNamedPipeHandleState ' +
+        'NamedPipes_TransactNamedPipe NamedPipes_WaitNamedPipe ' +
+        'Net_Share_ConnectionEnum Net_Share_FileClose ' +
+        'Net_Share_FileEnum Net_Share_FileGetInfo Net_Share_PermStr ' +
+        'Net_Share_ResourceStr Net_Share_SessionDel ' +
+        'Net_Share_SessionEnum Net_Share_SessionGetInfo ' +
+        'Net_Share_ShareAdd Net_Share_ShareCheck Net_Share_ShareDel ' +
+        'Net_Share_ShareEnum Net_Share_ShareGetInfo ' +
+        'Net_Share_ShareSetInfo Net_Share_StatisticsGetSvr ' +
+        'Net_Share_StatisticsGetWrk Now NowCalc NowCalcDate ' +
+        'NowDate NowTime PathFull PathGetRelative PathMake ' +
+        'PathSplit ProcessGetName ProcessGetPriority Radian ' +
+        'ReplaceStringInFile RunDos ScreenCapture_Capture ' +
+        'ScreenCapture_CaptureWnd ScreenCapture_SaveImage ' +
+        'ScreenCapture_SetBMPFormat ScreenCapture_SetJPGQuality ' +
+        'ScreenCapture_SetTIFColorDepth ScreenCapture_SetTIFCompression ' +
+        'Security__AdjustTokenPrivileges ' +
+        'Security__CreateProcessWithToken Security__DuplicateTokenEx ' +
+        'Security__GetAccountSid Security__GetLengthSid ' +
+        'Security__GetTokenInformation Security__ImpersonateSelf ' +
+        'Security__IsValidSid Security__LookupAccountName ' +
+        'Security__LookupAccountSid Security__LookupPrivilegeValue ' +
+        'Security__OpenProcessToken Security__OpenThreadToken ' +
+        'Security__OpenThreadTokenEx Security__SetPrivilege ' +
+        'Security__SetTokenInformation Security__SidToStringSid ' +
+        'Security__SidTypeStr Security__StringSidToSid SendMessage ' +
+        'SendMessageA SetDate SetTime Singleton SoundClose ' +
+        'SoundLength SoundOpen SoundPause SoundPlay SoundPos ' +
+        'SoundResume SoundSeek SoundStatus SoundStop ' +
+        'SQLite_Changes SQLite_Close SQLite_Display2DResult ' +
+        'SQLite_Encode SQLite_ErrCode SQLite_ErrMsg SQLite_Escape ' +
+        'SQLite_Exec SQLite_FastEncode SQLite_FastEscape ' +
+        'SQLite_FetchData SQLite_FetchNames SQLite_GetTable ' +
+        'SQLite_GetTable2d SQLite_LastInsertRowID SQLite_LibVersion ' +
+        'SQLite_Open SQLite_Query SQLite_QueryFinalize ' +
+        'SQLite_QueryReset SQLite_QuerySingleRow SQLite_SafeMode ' +
+        'SQLite_SetTimeout SQLite_Shutdown SQLite_SQLiteExe ' +
+        'SQLite_Startup SQLite_TotalChanges StringBetween ' +
+        'StringExplode StringInsert StringProper StringRepeat ' +
+        'StringTitleCase StringToHex TCPIpToName TempFile ' +
+        'TicksToTime Timer_Diff Timer_GetIdleTime Timer_GetTimerID ' +
+        'Timer_Init Timer_KillAllTimers Timer_KillTimer ' +
+        'Timer_SetTimer TimeToTicks VersionCompare viClose ' +
+        'viExecCommand viFindGpib viGpibBusReset viGTL ' +
+        'viInteractiveControl viOpen viSetAttribute viSetTimeout ' +
+        'WeekNumberISO WinAPI_AbortPath WinAPI_ActivateKeyboardLayout ' +
+        'WinAPI_AddClipboardFormatListener WinAPI_AddFontMemResourceEx ' +
+        'WinAPI_AddFontResourceEx WinAPI_AddIconOverlay ' +
+        'WinAPI_AddIconTransparency WinAPI_AddMRUString ' +
+        'WinAPI_AdjustBitmap WinAPI_AdjustTokenPrivileges ' +
+        'WinAPI_AdjustWindowRectEx WinAPI_AlphaBlend WinAPI_AngleArc ' +
+        'WinAPI_AnimateWindow WinAPI_Arc WinAPI_ArcTo ' +
+        'WinAPI_ArrayToStruct WinAPI_AssignProcessToJobObject ' +
+        'WinAPI_AssocGetPerceivedType WinAPI_AssocQueryString ' +
+        'WinAPI_AttachConsole WinAPI_AttachThreadInput ' +
+        'WinAPI_BackupRead WinAPI_BackupReadAbort WinAPI_BackupSeek ' +
+        'WinAPI_BackupWrite WinAPI_BackupWriteAbort WinAPI_Beep ' +
+        'WinAPI_BeginBufferedPaint WinAPI_BeginDeferWindowPos ' +
+        'WinAPI_BeginPaint WinAPI_BeginPath WinAPI_BeginUpdateResource ' +
+        'WinAPI_BitBlt WinAPI_BringWindowToTop ' +
+        'WinAPI_BroadcastSystemMessage WinAPI_BrowseForFolderDlg ' +
+        'WinAPI_BufferedPaintClear WinAPI_BufferedPaintInit ' +
+        'WinAPI_BufferedPaintSetAlpha WinAPI_BufferedPaintUnInit ' +
+        'WinAPI_CallNextHookEx WinAPI_CallWindowProc ' +
+        'WinAPI_CallWindowProcW WinAPI_CascadeWindows ' +
+        'WinAPI_ChangeWindowMessageFilterEx WinAPI_CharToOem ' +
+        'WinAPI_ChildWindowFromPointEx WinAPI_ClientToScreen ' +
+        'WinAPI_ClipCursor WinAPI_CloseDesktop WinAPI_CloseEnhMetaFile ' +
+        'WinAPI_CloseFigure WinAPI_CloseHandle WinAPI_CloseThemeData ' +
+        'WinAPI_CloseWindow WinAPI_CloseWindowStation ' +
+        'WinAPI_CLSIDFromProgID WinAPI_CoInitialize ' +
+        'WinAPI_ColorAdjustLuma WinAPI_ColorHLSToRGB ' +
+        'WinAPI_ColorRGBToHLS WinAPI_CombineRgn ' +
+        'WinAPI_CombineTransform WinAPI_CommandLineToArgv ' +
+        'WinAPI_CommDlgExtendedError WinAPI_CommDlgExtendedErrorEx ' +
+        'WinAPI_CompareString WinAPI_CompressBitmapBits ' +
+        'WinAPI_CompressBuffer WinAPI_ComputeCrc32 ' +
+        'WinAPI_ConfirmCredentials WinAPI_CopyBitmap WinAPI_CopyCursor ' +
+        'WinAPI_CopyEnhMetaFile WinAPI_CopyFileEx WinAPI_CopyIcon ' +
+        'WinAPI_CopyImage WinAPI_CopyRect WinAPI_CopyStruct ' +
+        'WinAPI_CoTaskMemAlloc WinAPI_CoTaskMemFree ' +
+        'WinAPI_CoTaskMemRealloc WinAPI_CoUninitialize ' +
+        'WinAPI_Create32BitHBITMAP WinAPI_Create32BitHICON ' +
+        'WinAPI_CreateANDBitmap WinAPI_CreateBitmap ' +
+        'WinAPI_CreateBitmapIndirect WinAPI_CreateBrushIndirect ' +
+        'WinAPI_CreateBuffer WinAPI_CreateBufferFromStruct ' +
+        'WinAPI_CreateCaret WinAPI_CreateColorAdjustment ' +
+        'WinAPI_CreateCompatibleBitmap WinAPI_CreateCompatibleBitmapEx ' +
+        'WinAPI_CreateCompatibleDC WinAPI_CreateDesktop ' +
+        'WinAPI_CreateDIB WinAPI_CreateDIBColorTable ' +
+        'WinAPI_CreateDIBitmap WinAPI_CreateDIBSection ' +
+        'WinAPI_CreateDirectory WinAPI_CreateDirectoryEx ' +
+        'WinAPI_CreateEllipticRgn WinAPI_CreateEmptyIcon ' +
+        'WinAPI_CreateEnhMetaFile WinAPI_CreateEvent WinAPI_CreateFile ' +
+        'WinAPI_CreateFileEx WinAPI_CreateFileMapping ' +
+        'WinAPI_CreateFont WinAPI_CreateFontEx ' +
+        'WinAPI_CreateFontIndirect WinAPI_CreateGUID ' +
+        'WinAPI_CreateHardLink WinAPI_CreateIcon ' +
+        'WinAPI_CreateIconFromResourceEx WinAPI_CreateIconIndirect ' +
+        'WinAPI_CreateJobObject WinAPI_CreateMargins ' +
+        'WinAPI_CreateMRUList WinAPI_CreateMutex WinAPI_CreateNullRgn ' +
+        'WinAPI_CreateNumberFormatInfo WinAPI_CreateObjectID ' +
+        'WinAPI_CreatePen WinAPI_CreatePoint WinAPI_CreatePolygonRgn ' +
+        'WinAPI_CreateProcess WinAPI_CreateProcessWithToken ' +
+        'WinAPI_CreateRect WinAPI_CreateRectEx WinAPI_CreateRectRgn ' +
+        'WinAPI_CreateRectRgnIndirect WinAPI_CreateRoundRectRgn ' +
+        'WinAPI_CreateSemaphore WinAPI_CreateSize ' +
+        'WinAPI_CreateSolidBitmap WinAPI_CreateSolidBrush ' +
+        'WinAPI_CreateStreamOnHGlobal WinAPI_CreateString ' +
+        'WinAPI_CreateSymbolicLink WinAPI_CreateTransform ' +
+        'WinAPI_CreateWindowEx WinAPI_CreateWindowStation ' +
+        'WinAPI_DecompressBuffer WinAPI_DecryptFile ' +
+        'WinAPI_DeferWindowPos WinAPI_DefineDosDevice ' +
+        'WinAPI_DefRawInputProc WinAPI_DefSubclassProc ' +
+        'WinAPI_DefWindowProc WinAPI_DefWindowProcW WinAPI_DeleteDC ' +
+        'WinAPI_DeleteEnhMetaFile WinAPI_DeleteFile ' +
+        'WinAPI_DeleteObject WinAPI_DeleteObjectID ' +
+        'WinAPI_DeleteVolumeMountPoint WinAPI_DeregisterShellHookWindow ' +
+        'WinAPI_DestroyCaret WinAPI_DestroyCursor WinAPI_DestroyIcon ' +
+        'WinAPI_DestroyWindow WinAPI_DeviceIoControl ' +
+        'WinAPI_DisplayStruct WinAPI_DllGetVersion WinAPI_DllInstall ' +
+        'WinAPI_DllUninstall WinAPI_DPtoLP WinAPI_DragAcceptFiles ' +
+        'WinAPI_DragFinish WinAPI_DragQueryFileEx ' +
+        'WinAPI_DragQueryPoint WinAPI_DrawAnimatedRects ' +
+        'WinAPI_DrawBitmap WinAPI_DrawEdge WinAPI_DrawFocusRect ' +
+        'WinAPI_DrawFrameControl WinAPI_DrawIcon WinAPI_DrawIconEx ' +
+        'WinAPI_DrawLine WinAPI_DrawShadowText WinAPI_DrawText ' +
+        'WinAPI_DrawThemeBackground WinAPI_DrawThemeEdge ' +
+        'WinAPI_DrawThemeIcon WinAPI_DrawThemeParentBackground ' +
+        'WinAPI_DrawThemeText WinAPI_DrawThemeTextEx ' +
+        'WinAPI_DuplicateEncryptionInfoFile WinAPI_DuplicateHandle ' +
+        'WinAPI_DuplicateTokenEx WinAPI_DwmDefWindowProc ' +
+        'WinAPI_DwmEnableBlurBehindWindow WinAPI_DwmEnableComposition ' +
+        'WinAPI_DwmExtendFrameIntoClientArea ' +
+        'WinAPI_DwmGetColorizationColor ' +
+        'WinAPI_DwmGetColorizationParameters ' +
+        'WinAPI_DwmGetWindowAttribute WinAPI_DwmInvalidateIconicBitmaps ' +
+        'WinAPI_DwmIsCompositionEnabled ' +
+        'WinAPI_DwmQueryThumbnailSourceSize WinAPI_DwmRegisterThumbnail ' +
+        'WinAPI_DwmSetColorizationParameters ' +
+        'WinAPI_DwmSetIconicLivePreviewBitmap ' +
+        'WinAPI_DwmSetIconicThumbnail WinAPI_DwmSetWindowAttribute ' +
+        'WinAPI_DwmUnregisterThumbnail ' +
+        'WinAPI_DwmUpdateThumbnailProperties WinAPI_DWordToFloat ' +
+        'WinAPI_DWordToInt WinAPI_EjectMedia WinAPI_Ellipse ' +
+        'WinAPI_EmptyWorkingSet WinAPI_EnableWindow WinAPI_EncryptFile ' +
+        'WinAPI_EncryptionDisable WinAPI_EndBufferedPaint ' +
+        'WinAPI_EndDeferWindowPos WinAPI_EndPaint WinAPI_EndPath ' +
+        'WinAPI_EndUpdateResource WinAPI_EnumChildProcess ' +
+        'WinAPI_EnumChildWindows WinAPI_EnumDesktops ' +
+        'WinAPI_EnumDesktopWindows WinAPI_EnumDeviceDrivers ' +
+        'WinAPI_EnumDisplayDevices WinAPI_EnumDisplayMonitors ' +
+        'WinAPI_EnumDisplaySettings WinAPI_EnumDllProc ' +
+        'WinAPI_EnumFiles WinAPI_EnumFileStreams ' +
+        'WinAPI_EnumFontFamilies WinAPI_EnumHardLinks ' +
+        'WinAPI_EnumMRUList WinAPI_EnumPageFiles ' +
+        'WinAPI_EnumProcessHandles WinAPI_EnumProcessModules ' +
+        'WinAPI_EnumProcessThreads WinAPI_EnumProcessWindows ' +
+        'WinAPI_EnumRawInputDevices WinAPI_EnumResourceLanguages ' +
+        'WinAPI_EnumResourceNames WinAPI_EnumResourceTypes ' +
+        'WinAPI_EnumSystemGeoID WinAPI_EnumSystemLocales ' +
+        'WinAPI_EnumUILanguages WinAPI_EnumWindows ' +
+        'WinAPI_EnumWindowsPopup WinAPI_EnumWindowStations ' +
+        'WinAPI_EnumWindowsTop WinAPI_EqualMemory WinAPI_EqualRect ' +
+        'WinAPI_EqualRgn WinAPI_ExcludeClipRect ' +
+        'WinAPI_ExpandEnvironmentStrings WinAPI_ExtCreatePen ' +
+        'WinAPI_ExtCreateRegion WinAPI_ExtFloodFill WinAPI_ExtractIcon ' +
+        'WinAPI_ExtractIconEx WinAPI_ExtSelectClipRgn ' +
+        'WinAPI_FatalAppExit WinAPI_FatalExit ' +
+        'WinAPI_FileEncryptionStatus WinAPI_FileExists ' +
+        'WinAPI_FileIconInit WinAPI_FileInUse WinAPI_FillMemory ' +
+        'WinAPI_FillPath WinAPI_FillRect WinAPI_FillRgn ' +
+        'WinAPI_FindClose WinAPI_FindCloseChangeNotification ' +
+        'WinAPI_FindExecutable WinAPI_FindFirstChangeNotification ' +
+        'WinAPI_FindFirstFile WinAPI_FindFirstFileName ' +
+        'WinAPI_FindFirstStream WinAPI_FindNextChangeNotification ' +
+        'WinAPI_FindNextFile WinAPI_FindNextFileName ' +
+        'WinAPI_FindNextStream WinAPI_FindResource ' +
+        'WinAPI_FindResourceEx WinAPI_FindTextDlg WinAPI_FindWindow ' +
+        'WinAPI_FlashWindow WinAPI_FlashWindowEx WinAPI_FlattenPath ' +
+        'WinAPI_FloatToDWord WinAPI_FloatToInt WinAPI_FlushFileBuffers ' +
+        'WinAPI_FlushFRBuffer WinAPI_FlushViewOfFile ' +
+        'WinAPI_FormatDriveDlg WinAPI_FormatMessage WinAPI_FrameRect ' +
+        'WinAPI_FrameRgn WinAPI_FreeLibrary WinAPI_FreeMemory ' +
+        'WinAPI_FreeMRUList WinAPI_FreeResource WinAPI_GdiComment ' +
+        'WinAPI_GetActiveWindow WinAPI_GetAllUsersProfileDirectory ' +
+        'WinAPI_GetAncestor WinAPI_GetApplicationRestartSettings ' +
+        'WinAPI_GetArcDirection WinAPI_GetAsyncKeyState ' +
+        'WinAPI_GetBinaryType WinAPI_GetBitmapBits ' +
+        'WinAPI_GetBitmapDimension WinAPI_GetBitmapDimensionEx ' +
+        'WinAPI_GetBkColor WinAPI_GetBkMode WinAPI_GetBoundsRect ' +
+        'WinAPI_GetBrushOrg WinAPI_GetBufferedPaintBits ' +
+        'WinAPI_GetBufferedPaintDC WinAPI_GetBufferedPaintTargetDC ' +
+        'WinAPI_GetBufferedPaintTargetRect WinAPI_GetBValue ' +
+        'WinAPI_GetCaretBlinkTime WinAPI_GetCaretPos WinAPI_GetCDType ' +
+        'WinAPI_GetClassInfoEx WinAPI_GetClassLongEx ' +
+        'WinAPI_GetClassName WinAPI_GetClientHeight ' +
+        'WinAPI_GetClientRect WinAPI_GetClientWidth ' +
+        'WinAPI_GetClipboardSequenceNumber WinAPI_GetClipBox ' +
+        'WinAPI_GetClipCursor WinAPI_GetClipRgn ' +
+        'WinAPI_GetColorAdjustment WinAPI_GetCompressedFileSize ' +
+        'WinAPI_GetCompression WinAPI_GetConnectedDlg ' +
+        'WinAPI_GetCurrentDirectory WinAPI_GetCurrentHwProfile ' +
+        'WinAPI_GetCurrentObject WinAPI_GetCurrentPosition ' +
+        'WinAPI_GetCurrentProcess ' +
+        'WinAPI_GetCurrentProcessExplicitAppUserModelID ' +
+        'WinAPI_GetCurrentProcessID WinAPI_GetCurrentThemeName ' +
+        'WinAPI_GetCurrentThread WinAPI_GetCurrentThreadId ' +
+        'WinAPI_GetCursor WinAPI_GetCursorInfo WinAPI_GetDateFormat ' +
+        'WinAPI_GetDC WinAPI_GetDCEx WinAPI_GetDefaultPrinter ' +
+        'WinAPI_GetDefaultUserProfileDirectory WinAPI_GetDesktopWindow ' +
+        'WinAPI_GetDeviceCaps WinAPI_GetDeviceDriverBaseName ' +
+        'WinAPI_GetDeviceDriverFileName WinAPI_GetDeviceGammaRamp ' +
+        'WinAPI_GetDIBColorTable WinAPI_GetDIBits ' +
+        'WinAPI_GetDiskFreeSpaceEx WinAPI_GetDlgCtrlID ' +
+        'WinAPI_GetDlgItem WinAPI_GetDllDirectory ' +
+        'WinAPI_GetDriveBusType WinAPI_GetDriveGeometryEx ' +
+        'WinAPI_GetDriveNumber WinAPI_GetDriveType ' +
+        'WinAPI_GetDurationFormat WinAPI_GetEffectiveClientRect ' +
+        'WinAPI_GetEnhMetaFile WinAPI_GetEnhMetaFileBits ' +
+        'WinAPI_GetEnhMetaFileDescription WinAPI_GetEnhMetaFileDimension ' +
+        'WinAPI_GetEnhMetaFileHeader WinAPI_GetErrorMessage ' +
+        'WinAPI_GetErrorMode WinAPI_GetExitCodeProcess ' +
+        'WinAPI_GetExtended WinAPI_GetFileAttributes WinAPI_GetFileID ' +
+        'WinAPI_GetFileInformationByHandle ' +
+        'WinAPI_GetFileInformationByHandleEx WinAPI_GetFilePointerEx ' +
+        'WinAPI_GetFileSizeEx WinAPI_GetFileSizeOnDisk ' +
+        'WinAPI_GetFileTitle WinAPI_GetFileType ' +
+        'WinAPI_GetFileVersionInfo WinAPI_GetFinalPathNameByHandle ' +
+        'WinAPI_GetFinalPathNameByHandleEx WinAPI_GetFocus ' +
+        'WinAPI_GetFontMemoryResourceInfo WinAPI_GetFontName ' +
+        'WinAPI_GetFontResourceInfo WinAPI_GetForegroundWindow ' +
+        'WinAPI_GetFRBuffer WinAPI_GetFullPathName WinAPI_GetGeoInfo ' +
+        'WinAPI_GetGlyphOutline WinAPI_GetGraphicsMode ' +
+        'WinAPI_GetGuiResources WinAPI_GetGUIThreadInfo ' +
+        'WinAPI_GetGValue WinAPI_GetHandleInformation ' +
+        'WinAPI_GetHGlobalFromStream WinAPI_GetIconDimension ' +
+        'WinAPI_GetIconInfo WinAPI_GetIconInfoEx WinAPI_GetIdleTime ' +
+        'WinAPI_GetKeyboardLayout WinAPI_GetKeyboardLayoutList ' +
+        'WinAPI_GetKeyboardState WinAPI_GetKeyboardType ' +
+        'WinAPI_GetKeyNameText WinAPI_GetKeyState ' +
+        'WinAPI_GetLastActivePopup WinAPI_GetLastError ' +
+        'WinAPI_GetLastErrorMessage WinAPI_GetLayeredWindowAttributes ' +
+        'WinAPI_GetLocaleInfo WinAPI_GetLogicalDrives ' +
+        'WinAPI_GetMapMode WinAPI_GetMemorySize ' +
+        'WinAPI_GetMessageExtraInfo WinAPI_GetModuleFileNameEx ' +
+        'WinAPI_GetModuleHandle WinAPI_GetModuleHandleEx ' +
+        'WinAPI_GetModuleInformation WinAPI_GetMonitorInfo ' +
+        'WinAPI_GetMousePos WinAPI_GetMousePosX WinAPI_GetMousePosY ' +
+        'WinAPI_GetMUILanguage WinAPI_GetNumberFormat WinAPI_GetObject ' +
+        'WinAPI_GetObjectID WinAPI_GetObjectInfoByHandle ' +
+        'WinAPI_GetObjectNameByHandle WinAPI_GetObjectType ' +
+        'WinAPI_GetOpenFileName WinAPI_GetOutlineTextMetrics ' +
+        'WinAPI_GetOverlappedResult WinAPI_GetParent ' +
+        'WinAPI_GetParentProcess WinAPI_GetPerformanceInfo ' +
+        'WinAPI_GetPEType WinAPI_GetPhysicallyInstalledSystemMemory ' +
+        'WinAPI_GetPixel WinAPI_GetPolyFillMode WinAPI_GetPosFromRect ' +
+        'WinAPI_GetPriorityClass WinAPI_GetProcAddress ' +
+        'WinAPI_GetProcessAffinityMask WinAPI_GetProcessCommandLine ' +
+        'WinAPI_GetProcessFileName WinAPI_GetProcessHandleCount ' +
+        'WinAPI_GetProcessID WinAPI_GetProcessIoCounters ' +
+        'WinAPI_GetProcessMemoryInfo WinAPI_GetProcessName ' +
+        'WinAPI_GetProcessShutdownParameters WinAPI_GetProcessTimes ' +
+        'WinAPI_GetProcessUser WinAPI_GetProcessWindowStation ' +
+        'WinAPI_GetProcessWorkingDirectory WinAPI_GetProfilesDirectory ' +
+        'WinAPI_GetPwrCapabilities WinAPI_GetRawInputBuffer ' +
+        'WinAPI_GetRawInputBufferLength WinAPI_GetRawInputData ' +
+        'WinAPI_GetRawInputDeviceInfo WinAPI_GetRegionData ' +
+        'WinAPI_GetRegisteredRawInputDevices ' +
+        'WinAPI_GetRegKeyNameByHandle WinAPI_GetRgnBox WinAPI_GetROP2 ' +
+        'WinAPI_GetRValue WinAPI_GetSaveFileName WinAPI_GetShellWindow ' +
+        'WinAPI_GetStartupInfo WinAPI_GetStdHandle ' +
+        'WinAPI_GetStockObject WinAPI_GetStretchBltMode ' +
+        'WinAPI_GetString WinAPI_GetSysColor WinAPI_GetSysColorBrush ' +
+        'WinAPI_GetSystemDefaultLangID WinAPI_GetSystemDefaultLCID ' +
+        'WinAPI_GetSystemDefaultUILanguage WinAPI_GetSystemDEPPolicy ' +
+        'WinAPI_GetSystemInfo WinAPI_GetSystemMetrics ' +
+        'WinAPI_GetSystemPowerStatus WinAPI_GetSystemTimes ' +
+        'WinAPI_GetSystemWow64Directory WinAPI_GetTabbedTextExtent ' +
+        'WinAPI_GetTempFileName WinAPI_GetTextAlign ' +
+        'WinAPI_GetTextCharacterExtra WinAPI_GetTextColor ' +
+        'WinAPI_GetTextExtentPoint32 WinAPI_GetTextFace ' +
+        'WinAPI_GetTextMetrics WinAPI_GetThemeAppProperties ' +
+        'WinAPI_GetThemeBackgroundContentRect ' +
+        'WinAPI_GetThemeBackgroundExtent WinAPI_GetThemeBackgroundRegion ' +
+        'WinAPI_GetThemeBitmap WinAPI_GetThemeBool ' +
+        'WinAPI_GetThemeColor WinAPI_GetThemeDocumentationProperty ' +
+        'WinAPI_GetThemeEnumValue WinAPI_GetThemeFilename ' +
+        'WinAPI_GetThemeFont WinAPI_GetThemeInt WinAPI_GetThemeMargins ' +
+        'WinAPI_GetThemeMetric WinAPI_GetThemePartSize ' +
+        'WinAPI_GetThemePosition WinAPI_GetThemePropertyOrigin ' +
+        'WinAPI_GetThemeRect WinAPI_GetThemeString ' +
+        'WinAPI_GetThemeSysBool WinAPI_GetThemeSysColor ' +
+        'WinAPI_GetThemeSysColorBrush WinAPI_GetThemeSysFont ' +
+        'WinAPI_GetThemeSysInt WinAPI_GetThemeSysSize ' +
+        'WinAPI_GetThemeSysString WinAPI_GetThemeTextExtent ' +
+        'WinAPI_GetThemeTextMetrics WinAPI_GetThemeTransitionDuration ' +
+        'WinAPI_GetThreadDesktop WinAPI_GetThreadErrorMode ' +
+        'WinAPI_GetThreadLocale WinAPI_GetThreadUILanguage ' +
+        'WinAPI_GetTickCount WinAPI_GetTickCount64 ' +
+        'WinAPI_GetTimeFormat WinAPI_GetTopWindow ' +
+        'WinAPI_GetUDFColorMode WinAPI_GetUpdateRect ' +
+        'WinAPI_GetUpdateRgn WinAPI_GetUserDefaultLangID ' +
+        'WinAPI_GetUserDefaultLCID WinAPI_GetUserDefaultUILanguage ' +
+        'WinAPI_GetUserGeoID WinAPI_GetUserObjectInformation ' +
+        'WinAPI_GetVersion WinAPI_GetVersionEx ' +
+        'WinAPI_GetVolumeInformation WinAPI_GetVolumeInformationByHandle ' +
+        'WinAPI_GetVolumeNameForVolumeMountPoint WinAPI_GetWindow ' +
+        'WinAPI_GetWindowDC WinAPI_GetWindowDisplayAffinity ' +
+        'WinAPI_GetWindowExt WinAPI_GetWindowFileName ' +
+        'WinAPI_GetWindowHeight WinAPI_GetWindowInfo ' +
+        'WinAPI_GetWindowLong WinAPI_GetWindowOrg ' +
+        'WinAPI_GetWindowPlacement WinAPI_GetWindowRect ' +
+        'WinAPI_GetWindowRgn WinAPI_GetWindowRgnBox ' +
+        'WinAPI_GetWindowSubclass WinAPI_GetWindowText ' +
+        'WinAPI_GetWindowTheme WinAPI_GetWindowThreadProcessId ' +
+        'WinAPI_GetWindowWidth WinAPI_GetWorkArea ' +
+        'WinAPI_GetWorldTransform WinAPI_GetXYFromPoint ' +
+        'WinAPI_GlobalMemoryStatus WinAPI_GradientFill ' +
+        'WinAPI_GUIDFromString WinAPI_GUIDFromStringEx WinAPI_HashData ' +
+        'WinAPI_HashString WinAPI_HiByte WinAPI_HideCaret ' +
+        'WinAPI_HiDWord WinAPI_HiWord WinAPI_InflateRect ' +
+        'WinAPI_InitMUILanguage WinAPI_InProcess ' +
+        'WinAPI_IntersectClipRect WinAPI_IntersectRect ' +
+        'WinAPI_IntToDWord WinAPI_IntToFloat WinAPI_InvalidateRect ' +
+        'WinAPI_InvalidateRgn WinAPI_InvertANDBitmap ' +
+        'WinAPI_InvertColor WinAPI_InvertRect WinAPI_InvertRgn ' +
+        'WinAPI_IOCTL WinAPI_IsAlphaBitmap WinAPI_IsBadCodePtr ' +
+        'WinAPI_IsBadReadPtr WinAPI_IsBadStringPtr ' +
+        'WinAPI_IsBadWritePtr WinAPI_IsChild WinAPI_IsClassName ' +
+        'WinAPI_IsDoorOpen WinAPI_IsElevated WinAPI_IsHungAppWindow ' +
+        'WinAPI_IsIconic WinAPI_IsInternetConnected ' +
+        'WinAPI_IsLoadKBLayout WinAPI_IsMemory ' +
+        'WinAPI_IsNameInExpression WinAPI_IsNetworkAlive ' +
+        'WinAPI_IsPathShared WinAPI_IsProcessInJob ' +
+        'WinAPI_IsProcessorFeaturePresent WinAPI_IsRectEmpty ' +
+        'WinAPI_IsThemeActive ' +
+        'WinAPI_IsThemeBackgroundPartiallyTransparent ' +
+        'WinAPI_IsThemePartDefined WinAPI_IsValidLocale ' +
+        'WinAPI_IsWindow WinAPI_IsWindowEnabled WinAPI_IsWindowUnicode ' +
+        'WinAPI_IsWindowVisible WinAPI_IsWow64Process ' +
+        'WinAPI_IsWritable WinAPI_IsZoomed WinAPI_Keybd_Event ' +
+        'WinAPI_KillTimer WinAPI_LineDDA WinAPI_LineTo ' +
+        'WinAPI_LoadBitmap WinAPI_LoadCursor WinAPI_LoadCursorFromFile ' +
+        'WinAPI_LoadIcon WinAPI_LoadIconMetric ' +
+        'WinAPI_LoadIconWithScaleDown WinAPI_LoadImage ' +
+        'WinAPI_LoadIndirectString WinAPI_LoadKeyboardLayout ' +
+        'WinAPI_LoadLibrary WinAPI_LoadLibraryEx WinAPI_LoadMedia ' +
+        'WinAPI_LoadResource WinAPI_LoadShell32Icon WinAPI_LoadString ' +
+        'WinAPI_LoadStringEx WinAPI_LoByte WinAPI_LocalFree ' +
+        'WinAPI_LockDevice WinAPI_LockFile WinAPI_LockResource ' +
+        'WinAPI_LockWindowUpdate WinAPI_LockWorkStation WinAPI_LoDWord ' +
+        'WinAPI_LongMid WinAPI_LookupIconIdFromDirectoryEx ' +
+        'WinAPI_LoWord WinAPI_LPtoDP WinAPI_MAKELANGID ' +
+        'WinAPI_MAKELCID WinAPI_MakeLong WinAPI_MakeQWord ' +
+        'WinAPI_MakeWord WinAPI_MapViewOfFile WinAPI_MapVirtualKey ' +
+        'WinAPI_MaskBlt WinAPI_MessageBeep WinAPI_MessageBoxCheck ' +
+        'WinAPI_MessageBoxIndirect WinAPI_MirrorIcon ' +
+        'WinAPI_ModifyWorldTransform WinAPI_MonitorFromPoint ' +
+        'WinAPI_MonitorFromRect WinAPI_MonitorFromWindow ' +
+        'WinAPI_Mouse_Event WinAPI_MoveFileEx WinAPI_MoveMemory ' +
+        'WinAPI_MoveTo WinAPI_MoveToEx WinAPI_MoveWindow ' +
+        'WinAPI_MsgBox WinAPI_MulDiv WinAPI_MultiByteToWideChar ' +
+        'WinAPI_MultiByteToWideCharEx WinAPI_NtStatusToDosError ' +
+        'WinAPI_OemToChar WinAPI_OffsetClipRgn WinAPI_OffsetPoints ' +
+        'WinAPI_OffsetRect WinAPI_OffsetRgn WinAPI_OffsetWindowOrg ' +
+        'WinAPI_OpenDesktop WinAPI_OpenFileById WinAPI_OpenFileDlg ' +
+        'WinAPI_OpenFileMapping WinAPI_OpenIcon ' +
+        'WinAPI_OpenInputDesktop WinAPI_OpenJobObject WinAPI_OpenMutex ' +
+        'WinAPI_OpenProcess WinAPI_OpenProcessToken ' +
+        'WinAPI_OpenSemaphore WinAPI_OpenThemeData ' +
+        'WinAPI_OpenWindowStation WinAPI_PageSetupDlg ' +
+        'WinAPI_PaintDesktop WinAPI_PaintRgn WinAPI_ParseURL ' +
+        'WinAPI_ParseUserName WinAPI_PatBlt WinAPI_PathAddBackslash ' +
+        'WinAPI_PathAddExtension WinAPI_PathAppend ' +
+        'WinAPI_PathBuildRoot WinAPI_PathCanonicalize ' +
+        'WinAPI_PathCommonPrefix WinAPI_PathCompactPath ' +
+        'WinAPI_PathCompactPathEx WinAPI_PathCreateFromUrl ' +
+        'WinAPI_PathFindExtension WinAPI_PathFindFileName ' +
+        'WinAPI_PathFindNextComponent WinAPI_PathFindOnPath ' +
+        'WinAPI_PathGetArgs WinAPI_PathGetCharType ' +
+        'WinAPI_PathGetDriveNumber WinAPI_PathIsContentType ' +
+        'WinAPI_PathIsDirectory WinAPI_PathIsDirectoryEmpty ' +
+        'WinAPI_PathIsExe WinAPI_PathIsFileSpec ' +
+        'WinAPI_PathIsLFNFileSpec WinAPI_PathIsRelative ' +
+        'WinAPI_PathIsRoot WinAPI_PathIsSameRoot ' +
+        'WinAPI_PathIsSystemFolder WinAPI_PathIsUNC ' +
+        'WinAPI_PathIsUNCServer WinAPI_PathIsUNCServerShare ' +
+        'WinAPI_PathMakeSystemFolder WinAPI_PathMatchSpec ' +
+        'WinAPI_PathParseIconLocation WinAPI_PathRelativePathTo ' +
+        'WinAPI_PathRemoveArgs WinAPI_PathRemoveBackslash ' +
+        'WinAPI_PathRemoveExtension WinAPI_PathRemoveFileSpec ' +
+        'WinAPI_PathRenameExtension WinAPI_PathSearchAndQualify ' +
+        'WinAPI_PathSkipRoot WinAPI_PathStripPath ' +
+        'WinAPI_PathStripToRoot WinAPI_PathToRegion ' +
+        'WinAPI_PathUndecorate WinAPI_PathUnExpandEnvStrings ' +
+        'WinAPI_PathUnmakeSystemFolder WinAPI_PathUnquoteSpaces ' +
+        'WinAPI_PathYetAnotherMakeUniqueName WinAPI_PickIconDlg ' +
+        'WinAPI_PlayEnhMetaFile WinAPI_PlaySound WinAPI_PlgBlt ' +
+        'WinAPI_PointFromRect WinAPI_PolyBezier WinAPI_PolyBezierTo ' +
+        'WinAPI_PolyDraw WinAPI_Polygon WinAPI_PostMessage ' +
+        'WinAPI_PrimaryLangId WinAPI_PrintDlg WinAPI_PrintDlgEx ' +
+        'WinAPI_PrintWindow WinAPI_ProgIDFromCLSID WinAPI_PtInRect ' +
+        'WinAPI_PtInRectEx WinAPI_PtInRegion WinAPI_PtVisible ' +
+        'WinAPI_QueryDosDevice WinAPI_QueryInformationJobObject ' +
+        'WinAPI_QueryPerformanceCounter WinAPI_QueryPerformanceFrequency ' +
+        'WinAPI_RadialGradientFill WinAPI_ReadDirectoryChanges ' +
+        'WinAPI_ReadFile WinAPI_ReadProcessMemory WinAPI_Rectangle ' +
+        'WinAPI_RectInRegion WinAPI_RectIsEmpty WinAPI_RectVisible ' +
+        'WinAPI_RedrawWindow WinAPI_RegCloseKey ' +
+        'WinAPI_RegConnectRegistry WinAPI_RegCopyTree ' +
+        'WinAPI_RegCopyTreeEx WinAPI_RegCreateKey ' +
+        'WinAPI_RegDeleteEmptyKey WinAPI_RegDeleteKey ' +
+        'WinAPI_RegDeleteKeyValue WinAPI_RegDeleteTree ' +
+        'WinAPI_RegDeleteTreeEx WinAPI_RegDeleteValue ' +
+        'WinAPI_RegDisableReflectionKey WinAPI_RegDuplicateHKey ' +
+        'WinAPI_RegEnableReflectionKey WinAPI_RegEnumKey ' +
+        'WinAPI_RegEnumValue WinAPI_RegFlushKey ' +
+        'WinAPI_RegisterApplicationRestart WinAPI_RegisterClass ' +
+        'WinAPI_RegisterClassEx WinAPI_RegisterHotKey ' +
+        'WinAPI_RegisterPowerSettingNotification ' +
+        'WinAPI_RegisterRawInputDevices WinAPI_RegisterShellHookWindow ' +
+        'WinAPI_RegisterWindowMessage WinAPI_RegLoadMUIString ' +
+        'WinAPI_RegNotifyChangeKeyValue WinAPI_RegOpenKey ' +
+        'WinAPI_RegQueryInfoKey WinAPI_RegQueryLastWriteTime ' +
+        'WinAPI_RegQueryMultipleValues WinAPI_RegQueryReflectionKey ' +
+        'WinAPI_RegQueryValue WinAPI_RegRestoreKey WinAPI_RegSaveKey ' +
+        'WinAPI_RegSetValue WinAPI_ReleaseCapture WinAPI_ReleaseDC ' +
+        'WinAPI_ReleaseMutex WinAPI_ReleaseSemaphore ' +
+        'WinAPI_ReleaseStream WinAPI_RemoveClipboardFormatListener ' +
+        'WinAPI_RemoveDirectory WinAPI_RemoveFontMemResourceEx ' +
+        'WinAPI_RemoveFontResourceEx WinAPI_RemoveWindowSubclass ' +
+        'WinAPI_ReOpenFile WinAPI_ReplaceFile WinAPI_ReplaceTextDlg ' +
+        'WinAPI_ResetEvent WinAPI_RestartDlg WinAPI_RestoreDC ' +
+        'WinAPI_RGB WinAPI_RotatePoints WinAPI_RoundRect ' +
+        'WinAPI_SaveDC WinAPI_SaveFileDlg WinAPI_SaveHBITMAPToFile ' +
+        'WinAPI_SaveHICONToFile WinAPI_ScaleWindowExt ' +
+        'WinAPI_ScreenToClient WinAPI_SearchPath WinAPI_SelectClipPath ' +
+        'WinAPI_SelectClipRgn WinAPI_SelectObject ' +
+        'WinAPI_SendMessageTimeout WinAPI_SetActiveWindow ' +
+        'WinAPI_SetArcDirection WinAPI_SetBitmapBits ' +
+        'WinAPI_SetBitmapDimensionEx WinAPI_SetBkColor ' +
+        'WinAPI_SetBkMode WinAPI_SetBoundsRect WinAPI_SetBrushOrg ' +
+        'WinAPI_SetCapture WinAPI_SetCaretBlinkTime WinAPI_SetCaretPos ' +
+        'WinAPI_SetClassLongEx WinAPI_SetColorAdjustment ' +
+        'WinAPI_SetCompression WinAPI_SetCurrentDirectory ' +
+        'WinAPI_SetCurrentProcessExplicitAppUserModelID WinAPI_SetCursor ' +
+        'WinAPI_SetDCBrushColor WinAPI_SetDCPenColor ' +
+        'WinAPI_SetDefaultPrinter WinAPI_SetDeviceGammaRamp ' +
+        'WinAPI_SetDIBColorTable WinAPI_SetDIBits ' +
+        'WinAPI_SetDIBitsToDevice WinAPI_SetDllDirectory ' +
+        'WinAPI_SetEndOfFile WinAPI_SetEnhMetaFileBits ' +
+        'WinAPI_SetErrorMode WinAPI_SetEvent WinAPI_SetFileAttributes ' +
+        'WinAPI_SetFileInformationByHandleEx WinAPI_SetFilePointer ' +
+        'WinAPI_SetFilePointerEx WinAPI_SetFileShortName ' +
+        'WinAPI_SetFileValidData WinAPI_SetFocus WinAPI_SetFont ' +
+        'WinAPI_SetForegroundWindow WinAPI_SetFRBuffer ' +
+        'WinAPI_SetGraphicsMode WinAPI_SetHandleInformation ' +
+        'WinAPI_SetInformationJobObject WinAPI_SetKeyboardLayout ' +
+        'WinAPI_SetKeyboardState WinAPI_SetLastError ' +
+        'WinAPI_SetLayeredWindowAttributes WinAPI_SetLocaleInfo ' +
+        'WinAPI_SetMapMode WinAPI_SetMessageExtraInfo WinAPI_SetParent ' +
+        'WinAPI_SetPixel WinAPI_SetPolyFillMode ' +
+        'WinAPI_SetPriorityClass WinAPI_SetProcessAffinityMask ' +
+        'WinAPI_SetProcessShutdownParameters ' +
+        'WinAPI_SetProcessWindowStation WinAPI_SetRectRgn ' +
+        'WinAPI_SetROP2 WinAPI_SetSearchPathMode ' +
+        'WinAPI_SetStretchBltMode WinAPI_SetSysColors ' +
+        'WinAPI_SetSystemCursor WinAPI_SetTextAlign ' +
+        'WinAPI_SetTextCharacterExtra WinAPI_SetTextColor ' +
+        'WinAPI_SetTextJustification WinAPI_SetThemeAppProperties ' +
+        'WinAPI_SetThreadDesktop WinAPI_SetThreadErrorMode ' +
+        'WinAPI_SetThreadExecutionState WinAPI_SetThreadLocale ' +
+        'WinAPI_SetThreadUILanguage WinAPI_SetTimer ' +
+        'WinAPI_SetUDFColorMode WinAPI_SetUserGeoID ' +
+        'WinAPI_SetUserObjectInformation WinAPI_SetVolumeMountPoint ' +
+        'WinAPI_SetWindowDisplayAffinity WinAPI_SetWindowExt ' +
+        'WinAPI_SetWindowLong WinAPI_SetWindowOrg ' +
+        'WinAPI_SetWindowPlacement WinAPI_SetWindowPos ' +
+        'WinAPI_SetWindowRgn WinAPI_SetWindowsHookEx ' +
+        'WinAPI_SetWindowSubclass WinAPI_SetWindowText ' +
+        'WinAPI_SetWindowTheme WinAPI_SetWinEventHook ' +
+        'WinAPI_SetWorldTransform WinAPI_SfcIsFileProtected ' +
+        'WinAPI_SfcIsKeyProtected WinAPI_ShellAboutDlg ' +
+        'WinAPI_ShellAddToRecentDocs WinAPI_ShellChangeNotify ' +
+        'WinAPI_ShellChangeNotifyDeregister ' +
+        'WinAPI_ShellChangeNotifyRegister WinAPI_ShellCreateDirectory ' +
+        'WinAPI_ShellEmptyRecycleBin WinAPI_ShellExecute ' +
+        'WinAPI_ShellExecuteEx WinAPI_ShellExtractAssociatedIcon ' +
+        'WinAPI_ShellExtractIcon WinAPI_ShellFileOperation ' +
+        'WinAPI_ShellFlushSFCache WinAPI_ShellGetFileInfo ' +
+        'WinAPI_ShellGetIconOverlayIndex WinAPI_ShellGetImageList ' +
+        'WinAPI_ShellGetKnownFolderIDList WinAPI_ShellGetKnownFolderPath ' +
+        'WinAPI_ShellGetLocalizedName WinAPI_ShellGetPathFromIDList ' +
+        'WinAPI_ShellGetSetFolderCustomSettings WinAPI_ShellGetSettings ' +
+        'WinAPI_ShellGetSpecialFolderLocation ' +
+        'WinAPI_ShellGetSpecialFolderPath WinAPI_ShellGetStockIconInfo ' +
+        'WinAPI_ShellILCreateFromPath WinAPI_ShellNotifyIcon ' +
+        'WinAPI_ShellNotifyIconGetRect WinAPI_ShellObjectProperties ' +
+        'WinAPI_ShellOpenFolderAndSelectItems WinAPI_ShellOpenWithDlg ' +
+        'WinAPI_ShellQueryRecycleBin ' +
+        'WinAPI_ShellQueryUserNotificationState ' +
+        'WinAPI_ShellRemoveLocalizedName WinAPI_ShellRestricted ' +
+        'WinAPI_ShellSetKnownFolderPath WinAPI_ShellSetLocalizedName ' +
+        'WinAPI_ShellSetSettings WinAPI_ShellStartNetConnectionDlg ' +
+        'WinAPI_ShellUpdateImage WinAPI_ShellUserAuthenticationDlg ' +
+        'WinAPI_ShellUserAuthenticationDlgEx WinAPI_ShortToWord ' +
+        'WinAPI_ShowCaret WinAPI_ShowCursor WinAPI_ShowError ' +
+        'WinAPI_ShowLastError WinAPI_ShowMsg WinAPI_ShowOwnedPopups ' +
+        'WinAPI_ShowWindow WinAPI_ShutdownBlockReasonCreate ' +
+        'WinAPI_ShutdownBlockReasonDestroy ' +
+        'WinAPI_ShutdownBlockReasonQuery WinAPI_SizeOfResource ' +
+        'WinAPI_StretchBlt WinAPI_StretchDIBits ' +
+        'WinAPI_StrFormatByteSize WinAPI_StrFormatByteSizeEx ' +
+        'WinAPI_StrFormatKBSize WinAPI_StrFromTimeInterval ' +
+        'WinAPI_StringFromGUID WinAPI_StringLenA WinAPI_StringLenW ' +
+        'WinAPI_StrLen WinAPI_StrokeAndFillPath WinAPI_StrokePath ' +
+        'WinAPI_StructToArray WinAPI_SubLangId WinAPI_SubtractRect ' +
+        'WinAPI_SwapDWord WinAPI_SwapQWord WinAPI_SwapWord ' +
+        'WinAPI_SwitchColor WinAPI_SwitchDesktop ' +
+        'WinAPI_SwitchToThisWindow WinAPI_SystemParametersInfo ' +
+        'WinAPI_TabbedTextOut WinAPI_TerminateJobObject ' +
+        'WinAPI_TerminateProcess WinAPI_TextOut WinAPI_TileWindows ' +
+        'WinAPI_TrackMouseEvent WinAPI_TransparentBlt ' +
+        'WinAPI_TwipsPerPixelX WinAPI_TwipsPerPixelY ' +
+        'WinAPI_UnhookWindowsHookEx WinAPI_UnhookWinEvent ' +
+        'WinAPI_UnionRect WinAPI_UnionStruct WinAPI_UniqueHardwareID ' +
+        'WinAPI_UnloadKeyboardLayout WinAPI_UnlockFile ' +
+        'WinAPI_UnmapViewOfFile WinAPI_UnregisterApplicationRestart ' +
+        'WinAPI_UnregisterClass WinAPI_UnregisterHotKey ' +
+        'WinAPI_UnregisterPowerSettingNotification ' +
+        'WinAPI_UpdateLayeredWindow WinAPI_UpdateLayeredWindowEx ' +
+        'WinAPI_UpdateLayeredWindowIndirect WinAPI_UpdateResource ' +
+        'WinAPI_UpdateWindow WinAPI_UrlApplyScheme ' +
+        'WinAPI_UrlCanonicalize WinAPI_UrlCombine WinAPI_UrlCompare ' +
+        'WinAPI_UrlCreateFromPath WinAPI_UrlFixup WinAPI_UrlGetPart ' +
+        'WinAPI_UrlHash WinAPI_UrlIs WinAPI_UserHandleGrantAccess ' +
+        'WinAPI_ValidateRect WinAPI_ValidateRgn WinAPI_VerQueryRoot ' +
+        'WinAPI_VerQueryValue WinAPI_VerQueryValueEx ' +
+        'WinAPI_WaitForInputIdle WinAPI_WaitForMultipleObjects ' +
+        'WinAPI_WaitForSingleObject WinAPI_WideCharToMultiByte ' +
+        'WinAPI_WidenPath WinAPI_WindowFromDC WinAPI_WindowFromPoint ' +
+        'WinAPI_WordToShort WinAPI_Wow64EnableWow64FsRedirection ' +
+        'WinAPI_WriteConsole WinAPI_WriteFile ' +
+        'WinAPI_WriteProcessMemory WinAPI_ZeroMemory ' +
+        'WinNet_AddConnection WinNet_AddConnection2 ' +
+        'WinNet_AddConnection3 WinNet_CancelConnection ' +
+        'WinNet_CancelConnection2 WinNet_CloseEnum ' +
+        'WinNet_ConnectionDialog WinNet_ConnectionDialog1 ' +
+        'WinNet_DisconnectDialog WinNet_DisconnectDialog1 ' +
+        'WinNet_EnumResource WinNet_GetConnection ' +
+        'WinNet_GetConnectionPerformance WinNet_GetLastError ' +
+        'WinNet_GetNetworkInformation WinNet_GetProviderName ' +
+        'WinNet_GetResourceInformation WinNet_GetResourceParent ' +
+        'WinNet_GetUniversalName WinNet_GetUser WinNet_OpenEnum ' +
+        'WinNet_RestoreConnection WinNet_UseConnection Word_Create ' +
+        'Word_DocAdd Word_DocAttach Word_DocClose Word_DocExport ' +
+        'Word_DocFind Word_DocFindReplace Word_DocGet ' +
+        'Word_DocLinkAdd Word_DocLinkGet Word_DocOpen ' +
+        'Word_DocPictureAdd Word_DocPrint Word_DocRangeSet ' +
+        'Word_DocSave Word_DocSaveAs Word_DocTableRead ' +
+        'Word_DocTableWrite Word_Quit',
+
+        COMMENT = {
+            variants: [
+              hljs.COMMENT(';', '$', {relevance: 0}),
+              hljs.COMMENT('#cs', '#ce'),
+              hljs.COMMENT('#comments-start', '#comments-end')
+            ]
+        },
+
+        VARIABLE = {
+            className: 'variable',
+            begin: '\\$[A-z0-9_]+'
+        },
+
+        STRING = {
+            className: 'string',
+            variants: [{
+                begin: /"/,
+                end: /"/,
+                contains: [{
+                    begin: /""/,
+                    relevance: 0
+                }]
+            }, {
+                begin: /'/,
+                end: /'/,
+                contains: [{
+                    begin: /''/,
+                    relevance: 0
+                }]
+            }]
+        },
+
+        NUMBER = {
+            variants: [hljs.BINARY_NUMBER_MODE, hljs.C_NUMBER_MODE]
+        },
+
+        PREPROCESSOR = {
+            className: 'preprocessor',
+            begin: '#',
+            end: '$',
+            keywords: 'include include-once NoTrayIcon OnAutoItStartRegister RequireAdmin pragma ' +
+                'Au3Stripper_Ignore_Funcs Au3Stripper_Ignore_Variables ' +
+                'Au3Stripper_Off Au3Stripper_On Au3Stripper_Parameters ' +
+                'AutoIt3Wrapper_Add_Constants AutoIt3Wrapper_Au3Check_Parameters ' +
+                'AutoIt3Wrapper_Au3Check_Stop_OnWarning AutoIt3Wrapper_Aut2Exe ' +
+                'AutoIt3Wrapper_AutoIt3 AutoIt3Wrapper_AutoIt3Dir ' +
+                'AutoIt3Wrapper_Change2CUI AutoIt3Wrapper_Compile_Both ' +
+                'AutoIt3Wrapper_Compression AutoIt3Wrapper_EndIf ' +
+                'AutoIt3Wrapper_Icon AutoIt3Wrapper_If_Compile ' +
+                'AutoIt3Wrapper_If_Run AutoIt3Wrapper_Jump_To_First_Error ' +
+                'AutoIt3Wrapper_OutFile AutoIt3Wrapper_OutFile_Type ' +
+                'AutoIt3Wrapper_OutFile_X64 AutoIt3Wrapper_PlugIn_Funcs ' +
+                'AutoIt3Wrapper_Res_Comment Autoit3Wrapper_Res_Compatibility ' +
+                'AutoIt3Wrapper_Res_Description AutoIt3Wrapper_Res_Field ' +
+                'AutoIt3Wrapper_Res_File_Add AutoIt3Wrapper_Res_FileVersion ' +
+                'AutoIt3Wrapper_Res_FileVersion_AutoIncrement ' +
+                'AutoIt3Wrapper_Res_Icon_Add AutoIt3Wrapper_Res_Language ' +
+                'AutoIt3Wrapper_Res_LegalCopyright ' +
+                'AutoIt3Wrapper_Res_ProductVersion ' +
+                'AutoIt3Wrapper_Res_requestedExecutionLevel ' +
+                'AutoIt3Wrapper_Res_SaveSource AutoIt3Wrapper_Run_After ' +
+                'AutoIt3Wrapper_Run_Au3Check AutoIt3Wrapper_Run_Au3Stripper ' +
+                'AutoIt3Wrapper_Run_Before AutoIt3Wrapper_Run_Debug_Mode ' +
+                'AutoIt3Wrapper_Run_SciTE_Minimized ' +
+                'AutoIt3Wrapper_Run_SciTE_OutputPane_Minimized ' +
+                'AutoIt3Wrapper_Run_Tidy AutoIt3Wrapper_ShowProgress ' +
+                'AutoIt3Wrapper_Testing AutoIt3Wrapper_Tidy_Stop_OnError ' +
+                'AutoIt3Wrapper_UPX_Parameters AutoIt3Wrapper_UseUPX ' +
+                'AutoIt3Wrapper_UseX64 AutoIt3Wrapper_Version ' +
+                'AutoIt3Wrapper_Versioning AutoIt3Wrapper_Versioning_Parameters ' +
+                'Tidy_Off Tidy_On Tidy_Parameters EndRegion Region',
+            contains: [{
+                    begin: /\\\n/,
+                    relevance: 0
+                }, {
+                    beginKeywords: 'include',
+                    end: '$',
+                    contains: [
+                        STRING, {
+                            className: 'string',
+                            variants: [{
+                                begin: '<',
+                                end: '>'
+                            }, {
+                                begin: /"/,
+                                end: /"/,
+                                contains: [{
+                                    begin: /""/,
+                                    relevance: 0
+                                }]
+                            }, {
+                                begin: /'/,
+                                end: /'/,
+                                contains: [{
+                                    begin: /''/,
+                                    relevance: 0
+                                }]
+                            }]
+                        }
+                    ]
+                },
+                STRING,
+                COMMENT
+            ]
+        },
+
+        CONSTANT = {
+            className: 'constant',
+            // begin: '@',
+            // end: '$',
+            // keywords: 'AppDataCommonDir AppDataDir AutoItExe AutoItPID AutoItVersion AutoItX64 COM_EventObj CommonFilesDir Compiled ComputerName ComSpec CPUArch CR CRLF DesktopCommonDir DesktopDepth DesktopDir DesktopHeight DesktopRefresh DesktopWidth DocumentsCommonDir error exitCode exitMethod extended FavoritesCommonDir FavoritesDir GUI_CtrlHandle GUI_CtrlId GUI_DragFile GUI_DragId GUI_DropId GUI_WinHandle HomeDrive HomePath HomeShare HotKeyPressed HOUR IPAddress1 IPAddress2 IPAddress3 IPAddress4 KBLayout LF LocalAppDataDir LogonDNSDomain LogonDomain LogonServer MDAY MIN MON MSEC MUILang MyDocumentsDir NumParams OSArch OSBuild OSLang OSServicePack OSType OSVersion ProgramFilesDir ProgramsCommonDir ProgramsDir ScriptDir ScriptFullPath ScriptLineNumber ScriptName SEC StartMenuCommonDir StartMenuDir StartupCommonDir StartupDir SW_DISABLE SW_ENABLE SW_HIDE SW_LOCK SW_MAXIMIZE SW_MINIMIZE SW_RESTORE SW_SHOW SW_SHOWDEFAULT SW_SHOWMAXIMIZED SW_SHOWMINIMIZED SW_SHOWMINNOACTIVE SW_SHOWNA SW_SHOWNOACTIVATE SW_SHOWNORMAL SW_UNLOCK SystemDir TAB TempDir TRAY_ID TrayIconFlashing TrayIconVisible UserName UserProfileDir WDAY WindowsDir WorkingDir YDAY YEAR',
+            // relevance: 5
+            begin: '@[A-z0-9_]+'
+        },
+
+        FUNCTION = {
+            className: 'function',
+            beginKeywords: 'Func',
+            end: '$',
+            excludeEnd: true,
+            illegal: '\\$|\\[|%',
+            contains: [
+                hljs.UNDERSCORE_TITLE_MODE, {
+                    className: 'params',
+                    begin: '\\(',
+                    end: '\\)',
+                    contains: [
+                        VARIABLE,
+                        STRING,
+                        NUMBER
+                    ]
+                }
+            ]
+        };
+
+    return {
+        case_insensitive: true,
+        keywords: {
+            keyword: KEYWORDS,
+            built_in: BUILT_IN,
+            literal: LITERAL
+        },
+        contains: [
+            COMMENT,
+            VARIABLE,
+            STRING,
+            NUMBER,
+            PREPROCESSOR,
+            CONSTANT,
+            FUNCTION
+        ]
+    }
 });
 
 hljs.registerLanguage('avrasm', function(hljs) {
@@ -1918,7 +3678,7 @@ hljs.registerLanguage('cal', function(hljs) {
         PROCEDURE
     ]
   };
-    
+
   return {
     case_insensitive: true,
     keywords: { keyword: KEYWORDS, literal: LITERALS },
@@ -2154,7 +3914,7 @@ hljs.registerLanguage('clojure-repl', function(hljs) {
         begin: /^([\w.-]+|\s*#_)=>/,
         starts: {
           end: /$/,
-          subLanguage: 'clojure', subLanguageMode: 'continuous'
+          subLanguage: 'clojure'
         }
       }
     ]
@@ -2213,9 +3973,6 @@ hljs.registerLanguage('coffeescript', function(hljs) {
       'true false null undefined ' +
       // Coffee literals
       'yes no on off',
-    reserved:
-      'case default function var void with const let enum export import native ' +
-      '__hasProp __extends __slice __bind __indexOf',
     built_in:
       'npm require console print module global window document'
   };
@@ -2347,29 +4104,55 @@ hljs.registerLanguage('coffeescript', function(hljs) {
 hljs.registerLanguage('cpp', function(hljs) {
   var CPP_PRIMATIVE_TYPES = {
     className: 'keyword',
-    begin: '[a-z\\d_]*_t'
+    begin: '\\b[a-z\\d_]*_t\\b'
   };
 
+  var STRINGS = {
+    className: 'string',
+    variants: [
+      hljs.inherit(hljs.QUOTE_STRING_MODE, { begin: '((u8?|U)|L)?"' }),
+      {
+        begin: '(u8?|U)?R"', end: '"',
+        contains: [hljs.BACKSLASH_ESCAPE]
+      },
+      {
+        begin: '\'\\\\?.', end: '\'',
+        illegal: '.'
+      }
+    ]
+  };
+
+  var NUMBERS = {
+    className: 'number',
+    variants: [
+      { begin: '\\b(\\d+(\\.\\d*)?|\\.\\d+)(u|U|l|L|ul|UL|f|F)' },
+      { begin: hljs.C_NUMBER_RE }
+    ]
+  };
+
+  var FUNCTION_TITLE = hljs.IDENT_RE + '\\s*\\(';
+
   var CPP_KEYWORDS = {
-    keyword: 'false int float while private char catch export virtual operator sizeof ' +
+    keyword: 'int float while private char catch export virtual operator sizeof ' +
       'dynamic_cast|10 typedef const_cast|10 const struct for static_cast|10 union namespace ' +
       'unsigned long volatile static protected bool template mutable if public friend ' +
-      'do goto auto void enum else break extern using true class asm case typeid ' +
+      'do goto auto void enum else break extern using class asm case typeid ' +
       'short reinterpret_cast|10 default double register explicit signed typename try this ' +
       'switch continue inline delete alignof constexpr decltype ' +
-      'noexcept nullptr static_assert thread_local restrict _Bool complex _Complex _Imaginary ' +
+      'noexcept static_assert thread_local restrict _Bool complex _Complex _Imaginary ' +
       'atomic_bool atomic_char atomic_schar ' +
       'atomic_uchar atomic_short atomic_ushort atomic_int atomic_uint atomic_long atomic_ulong atomic_llong ' +
       'atomic_ullong',
-    built_in: 'std string cin cout cerr clog stringstream istringstream ostringstream ' +
+    built_in: 'std string cin cout cerr clog stdin stdout stderr stringstream istringstream ostringstream ' +
       'auto_ptr deque list queue stack vector map set bitset multiset multimap unordered_set ' +
       'unordered_map unordered_multiset unordered_multimap array shared_ptr abort abs acos ' +
       'asin atan2 atan calloc ceil cosh cos exit exp fabs floor fmod fprintf fputs free frexp ' +
       'fscanf isalnum isalpha iscntrl isdigit isgraph islower isprint ispunct isspace isupper ' +
-      'isxdigit tolower toupper labs ldexp log10 log malloc memchr memcmp memcpy memset modf pow ' +
+      'isxdigit tolower toupper labs ldexp log10 log malloc realloc memchr memcmp memcpy memset modf pow ' +
       'printf putchar puts scanf sinh sin snprintf sprintf sqrt sscanf strcat strchr strcmp ' +
       'strcpy strcspn strlen strncat strncmp strncpy strpbrk strrchr strspn strstr tanh tan ' +
-      'vfprintf vprintf vsprintf'
+      'vfprintf vprintf vsprintf',
+    literal: 'true false nullptr NULL'
   };
   return {
     aliases: ['c', 'cc', 'h', 'c++', 'h++', 'hpp'],
@@ -2379,39 +4162,32 @@ hljs.registerLanguage('cpp', function(hljs) {
       CPP_PRIMATIVE_TYPES,
       hljs.C_LINE_COMMENT_MODE,
       hljs.C_BLOCK_COMMENT_MODE,
-      {
-        className: 'string',
-        variants: [
-          hljs.inherit(hljs.QUOTE_STRING_MODE, { begin: '((u8?|U)|L)?"' }),
-          {
-            begin: '(u8?|U)?R"', end: '"',
-            contains: [hljs.BACKSLASH_ESCAPE]
-          },
-          {
-            begin: '\'\\\\?.', end: '\'',
-            illegal: '.'
-          }
-        ]
-      },
-      {
-        className: 'number',
-        begin: '\\b(\\d+(\\.\\d*)?|\\.\\d+)(u|U|l|L|ul|UL|f|F)'
-      },
-      hljs.C_NUMBER_MODE,
+      NUMBERS,
+      STRINGS,
       {
         className: 'preprocessor',
         begin: '#', end: '$',
-        keywords: 'if else elif endif define undef warning error line pragma',
+        keywords: 'if else elif endif define undef warning error line ' +
+                  'pragma ifdef ifndef',
         contains: [
           {
             begin: /\\\n/, relevance: 0
           },
           {
-            begin: 'include\\s*[<"]', end: '[>"]',
-            keywords: 'include',
-            illegal: '\\n'
+            beginKeywords: 'include', end: '$',
+            contains: [
+              STRINGS,
+              {
+                className: 'string',
+                begin: '<', end: '>',
+                illegal: '\\n',
+              }
+            ]
           },
-          hljs.C_LINE_COMMENT_MODE
+          STRINGS,
+          NUMBERS,
+          hljs.C_LINE_COMMENT_MODE,
+          hljs.C_BLOCK_COMMENT_MODE,
         ]
       },
       {
@@ -2431,12 +4207,13 @@ hljs.registerLanguage('cpp', function(hljs) {
       },
       {
         className: 'function',
-        begin: '(' + hljs.IDENT_RE + '\\s+)+' + hljs.IDENT_RE + '\\s*\\(', returnBegin: true, end: /[{;=]/,
+        begin: '(' + hljs.IDENT_RE + '[\\*&\\s]+)+' + FUNCTION_TITLE,
+        returnBegin: true, end: /[{;=]/,
         excludeEnd: true,
         keywords: CPP_KEYWORDS,
         contains: [
           {
-            begin: hljs.IDENT_RE + '\\s*\\(', returnBegin: true,
+            begin: FUNCTION_TITLE, returnBegin: true,
             contains: [hljs.TITLE_MODE],
             relevance: 0
           },
@@ -2446,7 +4223,10 @@ hljs.registerLanguage('cpp', function(hljs) {
             keywords: CPP_KEYWORDS,
             relevance: 0,
             contains: [
-              hljs.C_BLOCK_COMMENT_MODE
+              hljs.C_LINE_COMMENT_MODE,
+              hljs.C_BLOCK_COMMENT_MODE,
+              STRINGS,
+              NUMBERS
             ]
           },
           hljs.C_LINE_COMMENT_MODE,
@@ -3107,16 +4887,14 @@ hljs.registerLanguage('dart', function (hljs) {
         '/\\*\\*',
         '\\*/',
         {
-          subLanguage: 'markdown',
-          subLanguageMode: 'continuous'
+          subLanguage: 'markdown'
         }
       ),
       hljs.COMMENT(
         '///',
         '$',
         {
-          subLanguage: 'markdown',
-          subLanguageMode: 'continuous'
+          subLanguage: 'markdown'
         }
       ),
       hljs.C_LINE_COMMENT_MODE,
@@ -3271,7 +5049,7 @@ hljs.registerLanguage('django', function(hljs) {
   return {
     aliases: ['jinja'],
     case_insensitive: true,
-    subLanguage: 'xml', subLanguageMode: 'continuous',
+    subLanguage: 'xml',
     contains: [
       hljs.COMMENT(/\{%\s*comment\s*%}/, /\{%\s*endcomment\s*%}/),
       hljs.COMMENT(/\{#/, /#}/),
@@ -3343,7 +5121,7 @@ hljs.registerLanguage('dockerfile', function(hljs) {
         begin: /^ *(onbuild +)?(run|cmd|entrypoint|volume|add|copy|workdir) +/,
         starts: {
           end: /[^\\]\n/,
-          subLanguage: 'bash', subLanguageMode: 'continuous'
+          subLanguage: 'bash'
         }
       },
       {
@@ -3415,7 +5193,7 @@ hljs.registerLanguage('dust', function(hljs) {
   return {
     aliases: ['dst'],
     case_insensitive: true,
-    subLanguage: 'xml', subLanguageMode: 'continuous',
+    subLanguage: 'xml',
     contains: [
       {
         className: 'expression',
@@ -3547,6 +5325,93 @@ hljs.registerLanguage('elixir', function(hljs) {
   };
 });
 
+hljs.registerLanguage('elm', function(hljs) {
+  var COMMENT_MODES = [
+    hljs.COMMENT('--', '$'),
+    hljs.COMMENT(
+      '{-',
+      '-}',
+      {
+        contains: ['self']
+      }
+    )
+  ];
+
+  var CONSTRUCTOR = {
+    className: 'type',
+    begin: '\\b[A-Z][\\w\']*', // TODO: other constructors (build-in, infix).
+    relevance: 0
+  };
+
+  var LIST = {
+    className: 'container',
+    begin: '\\(', end: '\\)',
+    illegal: '"',
+    contains: [
+      {className: 'type', begin: '\\b[A-Z][\\w]*(\\((\\.\\.|,|\\w+)\\))?'},
+      hljs.inherit(hljs.TITLE_MODE, {begin: '[_a-z][\\w\']*'})
+    ].concat(COMMENT_MODES)
+  };
+
+  var RECORD = {
+    className: 'container',
+    begin: '{', end: '}',
+    contains: LIST.contains
+  };
+
+  return {
+    keywords:
+      'let in if then else case of where module import exposing ' +
+      'type alias as infix infixl infixr port',
+    contains: [
+
+      // Top-level constructions.
+
+      {
+        className: 'module',
+        begin: '\\bmodule\\b', end: 'where',
+        keywords: 'module where',
+        contains: [LIST].concat(COMMENT_MODES),
+        illegal: '\\W\\.|;'
+      },
+      {
+        className: 'import',
+        begin: '\\bimport\\b', end: '$',
+        keywords: 'import|0 as exposing',
+        contains: [LIST].concat(COMMENT_MODES),
+        illegal: '\\W\\.|;'
+      },
+      {
+        className: 'typedef',
+        begin: '\\btype\\b', end: '$',
+        keywords: 'type alias',
+        contains: [CONSTRUCTOR, LIST, RECORD].concat(COMMENT_MODES)
+      },
+      {
+        className: 'infix',
+        beginKeywords: 'infix infixl infixr', end: '$',
+        contains: [hljs.C_NUMBER_MODE].concat(COMMENT_MODES)
+      },
+      {
+        className: 'foreign',
+        begin: '\\bport\\b', end: '$',
+        keywords: 'port',
+        contains: COMMENT_MODES
+      },
+
+      // Literals and names.
+
+      // TODO: characters.
+      hljs.QUOTE_STRING_MODE,
+      hljs.C_NUMBER_MODE,
+      CONSTRUCTOR,
+      hljs.inherit(hljs.TITLE_MODE, {begin: '^[_a-z][\\w\']*'}),
+
+      {begin: '->|<-'} // No markup, relevance booster
+    ].concat(COMMENT_MODES)
+  };
+});
+
 hljs.registerLanguage('ruby', function(hljs) {
   var RUBY_METHOD_RE = '[a-zA-Z_]\\w*[!?=]?|[-+~]\\@|<<|>>|=~|===?|<=>|[<>]=?|\\*\\*|[-/+%^&*~`|]|\\[\\]=?';
   var RUBY_KEYWORDS =
@@ -3633,7 +5498,7 @@ hljs.registerLanguage('ruby', function(hljs) {
     },
     {
       className: 'function',
-      beginKeywords: 'def', end: ' |$|;',
+      beginKeywords: 'def', end: '$|;',
       relevance: 0,
       contains: [
         hljs.inherit(hljs.TITLE_MODE, {begin: RUBY_METHOD_RE}),
@@ -3719,7 +5584,7 @@ hljs.registerLanguage('ruby', function(hljs) {
 
 hljs.registerLanguage('erb', function(hljs) {
   return {
-    subLanguage: 'xml', subLanguageMode: 'continuous',
+    subLanguage: 'xml',
     contains: [
       hljs.COMMENT('<%#', '%>'),
       {
@@ -4444,7 +6309,8 @@ hljs.registerLanguage('groovy', function(hljs) {
                 className: 'label', begin: '^\\s*[A-Za-z0-9_$]+:',
                 relevance: 0
             },
-        ]
+        ],
+        illegal: /#/
     }
 });
 
@@ -4561,7 +6427,7 @@ hljs.registerLanguage('handlebars', function(hljs) {
   return {
     aliases: ['hbs', 'html.hbs', 'html.handlebars'],
     case_insensitive: true,
-    subLanguage: 'xml', subLanguageMode: 'continuous',
+    subLanguage: 'xml',
     contains: [
       {
         className: 'expression',
@@ -4803,7 +6669,7 @@ hljs.registerLanguage('http', function(hljs) {
       },
       {
         begin: '\\n\\n',
-        starts: {subLanguage: '', endsWithParent: true}
+        starts: {subLanguage: [], endsWithParent: true}
       }
     ]
   };
@@ -4878,24 +6744,57 @@ hljs.registerLanguage('inform7', function(hljs) {
 });
 
 hljs.registerLanguage('ini', function(hljs) {
+  var STRING = {
+    className: "string",
+    contains: [hljs.BACKSLASH_ESCAPE],
+    variants: [
+      {
+        begin: "'''", end: "'''",
+        relevance: 10
+      }, {
+        begin: '"""', end: '"""',
+        relevance: 10
+      }, {
+        begin: '"', end: '"'
+      }, {
+        begin: "'", end: "'"
+      }
+    ]
+  };
   return {
+    aliases: ['toml'],
     case_insensitive: true,
     illegal: /\S/,
     contains: [
       hljs.COMMENT(';', '$'),
+      hljs.HASH_COMMENT_MODE,
       {
         className: 'title',
-        begin: '^\\[', end: '\\]'
+        begin: /^\s*\[+/, end: /\]+/
       },
       {
         className: 'setting',
-        begin: '^[a-z0-9\\[\\]_-]+[ \\t]*=[ \\t]*', end: '$',
+        begin: /^[a-z0-9\[\]_-]+\s*=\s*/, end: '$',
         contains: [
           {
             className: 'value',
             endsWithParent: true,
             keywords: 'on off true false yes no',
-            contains: [hljs.QUOTE_STRING_MODE, hljs.NUMBER_MODE],
+            contains: [
+              {
+                className: 'variable',
+                variants: [
+                  {begin: /\$[\w\d"][\w\d_]*/},
+                  {begin: /\$\{(.*?)}/}
+                ]
+              },
+              STRING,
+              {
+                className: 'number',
+                begin: /([\+\-]+)?[\d]+_[\d_]+/
+              },
+              hljs.NUMBER_MODE
+            ],
             relevance: 0
           }
         ]
@@ -4936,7 +6835,7 @@ hljs.registerLanguage('java', function(hljs) {
   return {
     aliases: ['jsp'],
     keywords: KEYWORDS,
-    illegal: /<\//,
+    illegal: /<\/|#/,
     contains: [
       hljs.COMMENT(
         '/\\*\\*',
@@ -5112,7 +7011,8 @@ hljs.registerLanguage('javascript', function(hljs) {
           hljs.UNDERSCORE_TITLE_MODE
         ]
       }
-    ]
+    ],
+    illegal: /#/
   };
 });
 
@@ -5422,12 +7322,12 @@ hljs.registerLanguage('lasso', function(hljs) {
   var LASSO_CLOSE_RE = '\\]|\\?>';
   var LASSO_KEYWORDS = {
     literal:
-      'true false none minimal full all void and or not ' +
+      'true false none minimal full all void ' +
       'bw nbw ew new cn ncn lt lte gt gte eq neq rx nrx ft',
     built_in:
       'array date decimal duration integer map pair string tag xml null ' +
       'boolean bytes keyword list locale queue set stack staticarray ' +
-      'local var variable global data self inherited',
+      'local var variable global data self inherited currentcapture givenblock',
     keyword:
       'error_code error_msg error_pop error_push error_reset cache ' +
       'database_names database_schemanames database_tablenames define_tag ' +
@@ -5480,7 +7380,7 @@ hljs.registerLanguage('lasso', function(hljs) {
     ),
     hljs.C_LINE_COMMENT_MODE,
     hljs.C_BLOCK_COMMENT_MODE,
-    hljs.inherit(hljs.C_NUMBER_MODE, {begin: hljs.C_NUMBER_RE + '|(-?infinity|nan)\\b'}),
+    hljs.inherit(hljs.C_NUMBER_MODE, {begin: hljs.C_NUMBER_RE + '|(infinity|nan)\\b'}),
     hljs.inherit(hljs.APOS_STRING_MODE, {illegal: null}),
     hljs.inherit(hljs.QUOTE_STRING_MODE, {illegal: null}),
     {
@@ -5508,7 +7408,7 @@ hljs.registerLanguage('lasso', function(hljs) {
       className: 'attribute',
       variants: [
         {
-          begin: '-' + hljs.UNDERSCORE_IDENT_RE,
+          begin: '-(?!infinity)' + hljs.UNDERSCORE_IDENT_RE,
           relevance: 0
         },
         {
@@ -5524,7 +7424,7 @@ hljs.registerLanguage('lasso', function(hljs) {
           contains: [LASSO_DATAMEMBER]
         },
         {
-          begin: ':=|/(?!\\w)=?|[-+*%=<>&|!?\\\\]+',
+          begin: '->|\\\\|&&?|\\|\\||!(?!=|>)|(and|or|not)\\b',
           relevance: 0
         }
       ]
@@ -6745,6 +8645,188 @@ hljs.registerLanguage('mizar', function(hljs) {
   };
 });
 
+hljs.registerLanguage('perl', function(hljs) {
+  var PERL_KEYWORDS = 'getpwent getservent quotemeta msgrcv scalar kill dbmclose undef lc ' +
+    'ma syswrite tr send umask sysopen shmwrite vec qx utime local oct semctl localtime ' +
+    'readpipe do return format read sprintf dbmopen pop getpgrp not getpwnam rewinddir qq' +
+    'fileno qw endprotoent wait sethostent bless s|0 opendir continue each sleep endgrent ' +
+    'shutdown dump chomp connect getsockname die socketpair close flock exists index shmget' +
+    'sub for endpwent redo lstat msgctl setpgrp abs exit select print ref gethostbyaddr ' +
+    'unshift fcntl syscall goto getnetbyaddr join gmtime symlink semget splice x|0 ' +
+    'getpeername recv log setsockopt cos last reverse gethostbyname getgrnam study formline ' +
+    'endhostent times chop length gethostent getnetent pack getprotoent getservbyname rand ' +
+    'mkdir pos chmod y|0 substr endnetent printf next open msgsnd readdir use unlink ' +
+    'getsockopt getpriority rindex wantarray hex system getservbyport endservent int chr ' +
+    'untie rmdir prototype tell listen fork shmread ucfirst setprotoent else sysseek link ' +
+    'getgrgid shmctl waitpid unpack getnetbyname reset chdir grep split require caller ' +
+    'lcfirst until warn while values shift telldir getpwuid my getprotobynumber delete and ' +
+    'sort uc defined srand accept package seekdir getprotobyname semop our rename seek if q|0 ' +
+    'chroot sysread setpwent no crypt getc chown sqrt write setnetent setpriority foreach ' +
+    'tie sin msgget map stat getlogin unless elsif truncate exec keys glob tied closedir' +
+    'ioctl socket readlink eval xor readline binmode setservent eof ord bind alarm pipe ' +
+    'atan2 getgrent exp time push setgrent gt lt or ne m|0 break given say state when';
+  var SUBST = {
+    className: 'subst',
+    begin: '[$@]\\{', end: '\\}',
+    keywords: PERL_KEYWORDS
+  };
+  var METHOD = {
+    begin: '->{', end: '}'
+    // contains defined later
+  };
+  var VAR = {
+    className: 'variable',
+    variants: [
+      {begin: /\$\d/},
+      {begin: /[\$%@](\^\w\b|#\w+(::\w+)*|{\w+}|\w+(::\w*)*)/},
+      {begin: /[\$%@][^\s\w{]/, relevance: 0}
+    ]
+  };
+  var STRING_CONTAINS = [hljs.BACKSLASH_ESCAPE, SUBST, VAR];
+  var PERL_DEFAULT_CONTAINS = [
+    VAR,
+    hljs.HASH_COMMENT_MODE,
+    hljs.COMMENT(
+      '^\\=\\w',
+      '\\=cut',
+      {
+        endsWithParent: true
+      }
+    ),
+    METHOD,
+    {
+      className: 'string',
+      contains: STRING_CONTAINS,
+      variants: [
+        {
+          begin: 'q[qwxr]?\\s*\\(', end: '\\)',
+          relevance: 5
+        },
+        {
+          begin: 'q[qwxr]?\\s*\\[', end: '\\]',
+          relevance: 5
+        },
+        {
+          begin: 'q[qwxr]?\\s*\\{', end: '\\}',
+          relevance: 5
+        },
+        {
+          begin: 'q[qwxr]?\\s*\\|', end: '\\|',
+          relevance: 5
+        },
+        {
+          begin: 'q[qwxr]?\\s*\\<', end: '\\>',
+          relevance: 5
+        },
+        {
+          begin: 'qw\\s+q', end: 'q',
+          relevance: 5
+        },
+        {
+          begin: '\'', end: '\'',
+          contains: [hljs.BACKSLASH_ESCAPE]
+        },
+        {
+          begin: '"', end: '"'
+        },
+        {
+          begin: '`', end: '`',
+          contains: [hljs.BACKSLASH_ESCAPE]
+        },
+        {
+          begin: '{\\w+}',
+          contains: [],
+          relevance: 0
+        },
+        {
+          begin: '\-?\\w+\\s*\\=\\>',
+          contains: [],
+          relevance: 0
+        }
+      ]
+    },
+    {
+      className: 'number',
+      begin: '(\\b0[0-7_]+)|(\\b0x[0-9a-fA-F_]+)|(\\b[1-9][0-9_]*(\\.[0-9_]+)?)|[0_]\\b',
+      relevance: 0
+    },
+    { // regexp container
+      begin: '(\\/\\/|' + hljs.RE_STARTERS_RE + '|\\b(split|return|print|reverse|grep)\\b)\\s*',
+      keywords: 'split return print reverse grep',
+      relevance: 0,
+      contains: [
+        hljs.HASH_COMMENT_MODE,
+        {
+          className: 'regexp',
+          begin: '(s|tr|y)/(\\\\.|[^/])*/(\\\\.|[^/])*/[a-z]*',
+          relevance: 10
+        },
+        {
+          className: 'regexp',
+          begin: '(m|qr)?/', end: '/[a-z]*',
+          contains: [hljs.BACKSLASH_ESCAPE],
+          relevance: 0 // allows empty "//" which is a common comment delimiter in other languages
+        }
+      ]
+    },
+    {
+      className: 'sub',
+      beginKeywords: 'sub', end: '(\\s*\\(.*?\\))?[;{]',
+      relevance: 5
+    },
+    {
+      className: 'operator',
+      begin: '-\\w\\b',
+      relevance: 0
+    },
+    {
+      begin: "^__DATA__$",
+      end: "^__END__$",
+      subLanguage: 'mojolicious',
+      contains: [
+        {
+            begin: "^@@.*",
+            end: "$",
+            className: "comment"
+        }
+      ]
+    }
+  ];
+  SUBST.contains = PERL_DEFAULT_CONTAINS;
+  METHOD.contains = PERL_DEFAULT_CONTAINS;
+
+  return {
+    aliases: ['pl'],
+    keywords: PERL_KEYWORDS,
+    contains: PERL_DEFAULT_CONTAINS
+  };
+});
+
+hljs.registerLanguage('mojolicious', function(hljs) {
+  return {
+    subLanguage: 'xml',
+    contains: [
+      {
+        className: 'preprocessor',
+        begin: '^__(END|DATA)__$'
+      },
+    // mojolicious line
+      {
+        begin: "^\\s*%{1,2}={0,2}", end: '$',
+        subLanguage: 'perl'
+      },
+    // mojolicious block
+      {
+        begin: "<%{1,2}={0,2}",
+        end: "={0,1}%>",
+        subLanguage: 'perl',
+        excludeBegin: true,
+        excludeEnd: true
+      }
+    ]
+  };
+});
+
 hljs.registerLanguage('monkey', function(hljs) {
   var NUMBER = {
     className: 'number', relevance: 0,
@@ -6973,7 +9055,8 @@ hljs.registerLanguage('nix', function(hljs) {
   var ATTRS = {
     className: 'variable',
     // TODO: we have to figure out a way how to exclude \s*=
-    begin: /[a-zA-Z0-9-_]+(\s*=)/
+    begin: /[a-zA-Z0-9-_]+(\s*=)/,
+    relevance: 0
   };
   var SINGLE_QUOTE = {
     className: 'string',
@@ -7420,160 +9503,6 @@ hljs.registerLanguage('parser3', function(hljs) {
   };
 });
 
-hljs.registerLanguage('perl', function(hljs) {
-  var PERL_KEYWORDS = 'getpwent getservent quotemeta msgrcv scalar kill dbmclose undef lc ' +
-    'ma syswrite tr send umask sysopen shmwrite vec qx utime local oct semctl localtime ' +
-    'readpipe do return format read sprintf dbmopen pop getpgrp not getpwnam rewinddir qq' +
-    'fileno qw endprotoent wait sethostent bless s|0 opendir continue each sleep endgrent ' +
-    'shutdown dump chomp connect getsockname die socketpair close flock exists index shmget' +
-    'sub for endpwent redo lstat msgctl setpgrp abs exit select print ref gethostbyaddr ' +
-    'unshift fcntl syscall goto getnetbyaddr join gmtime symlink semget splice x|0 ' +
-    'getpeername recv log setsockopt cos last reverse gethostbyname getgrnam study formline ' +
-    'endhostent times chop length gethostent getnetent pack getprotoent getservbyname rand ' +
-    'mkdir pos chmod y|0 substr endnetent printf next open msgsnd readdir use unlink ' +
-    'getsockopt getpriority rindex wantarray hex system getservbyport endservent int chr ' +
-    'untie rmdir prototype tell listen fork shmread ucfirst setprotoent else sysseek link ' +
-    'getgrgid shmctl waitpid unpack getnetbyname reset chdir grep split require caller ' +
-    'lcfirst until warn while values shift telldir getpwuid my getprotobynumber delete and ' +
-    'sort uc defined srand accept package seekdir getprotobyname semop our rename seek if q|0 ' +
-    'chroot sysread setpwent no crypt getc chown sqrt write setnetent setpriority foreach ' +
-    'tie sin msgget map stat getlogin unless elsif truncate exec keys glob tied closedir' +
-    'ioctl socket readlink eval xor readline binmode setservent eof ord bind alarm pipe ' +
-    'atan2 getgrent exp time push setgrent gt lt or ne m|0 break given say state when';
-  var SUBST = {
-    className: 'subst',
-    begin: '[$@]\\{', end: '\\}',
-    keywords: PERL_KEYWORDS
-  };
-  var METHOD = {
-    begin: '->{', end: '}'
-    // contains defined later
-  };
-  var VAR = {
-    className: 'variable',
-    variants: [
-      {begin: /\$\d/},
-      {begin: /[\$%@](\^\w\b|#\w+(::\w+)*|{\w+}|\w+(::\w*)*)/},
-      {begin: /[\$%@][^\s\w{]/, relevance: 0}
-    ]
-  };
-  var COMMENT = hljs.COMMENT(
-    '^(__END__|__DATA__)',
-    '\\n$',
-    {
-      relevance: 5
-    }
-  );
-  var STRING_CONTAINS = [hljs.BACKSLASH_ESCAPE, SUBST, VAR];
-  var PERL_DEFAULT_CONTAINS = [
-    VAR,
-    hljs.HASH_COMMENT_MODE,
-    COMMENT,
-    hljs.COMMENT(
-      '^\\=\\w',
-      '\\=cut',
-      {
-        endsWithParent: true
-      }
-    ),
-    METHOD,
-    {
-      className: 'string',
-      contains: STRING_CONTAINS,
-      variants: [
-        {
-          begin: 'q[qwxr]?\\s*\\(', end: '\\)',
-          relevance: 5
-        },
-        {
-          begin: 'q[qwxr]?\\s*\\[', end: '\\]',
-          relevance: 5
-        },
-        {
-          begin: 'q[qwxr]?\\s*\\{', end: '\\}',
-          relevance: 5
-        },
-        {
-          begin: 'q[qwxr]?\\s*\\|', end: '\\|',
-          relevance: 5
-        },
-        {
-          begin: 'q[qwxr]?\\s*\\<', end: '\\>',
-          relevance: 5
-        },
-        {
-          begin: 'qw\\s+q', end: 'q',
-          relevance: 5
-        },
-        {
-          begin: '\'', end: '\'',
-          contains: [hljs.BACKSLASH_ESCAPE]
-        },
-        {
-          begin: '"', end: '"'
-        },
-        {
-          begin: '`', end: '`',
-          contains: [hljs.BACKSLASH_ESCAPE]
-        },
-        {
-          begin: '{\\w+}',
-          contains: [],
-          relevance: 0
-        },
-        {
-          begin: '\-?\\w+\\s*\\=\\>',
-          contains: [],
-          relevance: 0
-        }
-      ]
-    },
-    {
-      className: 'number',
-      begin: '(\\b0[0-7_]+)|(\\b0x[0-9a-fA-F_]+)|(\\b[1-9][0-9_]*(\\.[0-9_]+)?)|[0_]\\b',
-      relevance: 0
-    },
-    { // regexp container
-      begin: '(\\/\\/|' + hljs.RE_STARTERS_RE + '|\\b(split|return|print|reverse|grep)\\b)\\s*',
-      keywords: 'split return print reverse grep',
-      relevance: 0,
-      contains: [
-        hljs.HASH_COMMENT_MODE,
-        COMMENT,
-        {
-          className: 'regexp',
-          begin: '(s|tr|y)/(\\\\.|[^/])*/(\\\\.|[^/])*/[a-z]*',
-          relevance: 10
-        },
-        {
-          className: 'regexp',
-          begin: '(m|qr)?/', end: '/[a-z]*',
-          contains: [hljs.BACKSLASH_ESCAPE],
-          relevance: 0 // allows empty "//" which is a common comment delimiter in other languages
-        }
-      ]
-    },
-    {
-      className: 'sub',
-      beginKeywords: 'sub', end: '(\\s*\\(.*?\\))?[;{]',
-      relevance: 5
-    },
-    {
-      className: 'operator',
-      begin: '-\\w\\b',
-      relevance: 0
-    }
-  ];
-  SUBST.contains = PERL_DEFAULT_CONTAINS;
-  METHOD.contains = PERL_DEFAULT_CONTAINS;
-
-  return {
-    aliases: ['pl'],
-    keywords: PERL_KEYWORDS,
-    contains: PERL_DEFAULT_CONTAINS
-  };
-});
-
 hljs.registerLanguage('pf', function(hljs) {
   var MACRO = {
     className: 'variable',
@@ -8011,13 +9940,12 @@ hljs.registerLanguage('protobuf', function(hljs) {
 });
 
 hljs.registerLanguage('puppet', function(hljs) {
-  var PUPPET_TYPE_REFERENCE =
-      'augeas computer cron exec file filebucket host interface k5login macauthorization mailalias maillist mcx mount nagios_command ' +
-      'nagios_contact nagios_contactgroup nagios_host nagios_hostdependency nagios_hostescalation nagios_hostextinfo nagios_hostgroup nagios_service firewall ' +
-      'nagios_servicedependency nagios_serviceescalation nagios_serviceextinfo nagios_servicegroup nagios_timeperiod notify package resources ' +
-      'router schedule scheduled_task selboolean selmodule service ssh_authorized_key sshkey stage tidy user vlan yumrepo zfs zone zpool';
 
-  var PUPPET_ATTRIBUTES =
+  var PUPPET_KEYWORDS = {
+    keyword:
+    /* language keywords */
+      'and case default else elsif false if in import enherits node or true undef unless main settings $string ',
+    literal:
     /* metaparameters */
       'alias audit before loglevel noop require subscribe tag ' +
     /* normal attributes */
@@ -8035,17 +9963,8 @@ hljs.registerLanguage('puppet', function(hljs) {
       'password_min_age profile_membership profiles project purge_ssh_keys role_membership roles salt shell uid baseurl cost descr enabled ' +
       'enablegroups exclude failovermethod gpgcheck gpgkey http_caching include includepkgs keepalive metadata_expire metalink mirrorlist ' +
       'priority protect proxy proxy_password proxy_username repo_gpgcheck s3_enabled skip_if_unavailable sslcacert sslclientcert sslclientkey ' +
-      'sslverify mounted';
-
-  var PUPPET_KEYWORDS =
-  {
-  keyword:
-    /* language keywords */
-      'and case class default define else elsif false if in import enherits node or true undef unless main settings $string ' + PUPPET_TYPE_REFERENCE,
-  literal:
-      PUPPET_ATTRIBUTES,
-
-  built_in:
+      'sslverify mounted',
+    built_in:
     /* core facts */
       'architecture augeasversion blockdevices boardmanufacturer boardproductname boardserialnumber cfkey dhcp_servers ' +
       'domain ec2_ ec2_userdata facterversion filesystems ldom fqdn gid hardwareisa hardwaremodel hostname id|0 interfaces '+
@@ -8061,59 +9980,70 @@ hljs.registerLanguage('puppet', function(hljs) {
 
   var COMMENT = hljs.COMMENT('#', '$');
 
+  var IDENT_RE = '([A-Za-z_]|::)(\\w|::)*';
+
+  var TITLE = hljs.inherit(hljs.TITLE_MODE, {begin: IDENT_RE});
+
+  var VARIABLE = {className: 'variable', begin: '\\$' + IDENT_RE};
+
   var STRING = {
     className: 'string',
-    contains: [hljs.BACKSLASH_ESCAPE],
+    contains: [hljs.BACKSLASH_ESCAPE, VARIABLE],
     variants: [
       {begin: /'/, end: /'/},
       {begin: /"/, end: /"/}
     ]
   };
 
-  var PUPPET_DEFAULT_CONTAINS = [
-    STRING,
-    COMMENT,
-    {
-      className: 'keyword',
-      beginKeywords: 'class', end: '$|;',
-      illegal: /=/,
-      contains: [
-        hljs.inherit(hljs.TITLE_MODE, {begin: '(::)?[A-Za-z_]\\w*(::\\w+)*'}),
-        COMMENT,
-        STRING
-      ]
-    },
-    {
-      className: 'keyword',
-      begin: '([a-zA-Z_(::)]+ *\\{)',
-      contains:[STRING, COMMENT],
-      relevance: 0
-    },
-    {
-      className: 'keyword',
-      begin: '(\\}|\\{)',
-      relevance: 0
-    },
-    {
-      className: 'function',
-      begin:'[a-zA-Z_]+\\s*=>'
-    },
-    {
-      className: 'constant',
-      begin: '(::)?(\\b[A-Z][a-z_]*(::)?)+',
-      relevance: 0
-    },
-    {
-      className: 'number',
-      begin: '(\\b0[0-7_]+)|(\\b0x[0-9a-fA-F_]+)|(\\b[1-9][0-9_]*(\\.[0-9_]+)?)|[0_]\\b',
-      relevance: 0
-    }
-  ];
-
   return {
     aliases: ['pp'],
-    keywords: PUPPET_KEYWORDS,
-    contains: PUPPET_DEFAULT_CONTAINS
+    contains: [
+      COMMENT,
+      VARIABLE,
+      STRING,
+      {
+        beginKeywords: 'class', end: '\\{|;',
+        illegal: /=/,
+        contains: [TITLE, COMMENT]
+      },
+      {
+        beginKeywords: 'define', end: /\{/,
+        contains: [
+          {
+            className: 'title', begin: hljs.IDENT_RE, endsParent: true
+          }
+        ]
+      },
+      {
+        begin: hljs.IDENT_RE + '\\s+\\{', returnBegin: true,
+        end: /\S/,
+        contains: [
+          {
+            className: 'name',
+            begin: hljs.IDENT_RE
+          },
+          {
+            begin: /\{/, end: /\}/,
+            keywords: PUPPET_KEYWORDS,
+            relevance: 0,
+            contains: [
+              STRING,
+              COMMENT,
+              {
+                begin:'[a-zA-Z_]+\\s*=>'
+              },
+              {
+                className: 'number',
+                begin: '(\\b0[0-7_]+)|(\\b0x[0-9a-fA-F_]+)|(\\b[1-9][0-9_]*(\\.[0-9_]+)?)|[0_]\\b',
+                relevance: 0
+              },
+              VARIABLE
+            ]
+          }
+        ],
+        relevance: 0
+      }
+    ]
   }
 });
 
@@ -8193,7 +10123,7 @@ hljs.registerLanguage('python', function(hljs) {
       },
       {
         className: 'decorator',
-        begin: /@/, end: /$/
+        begin: /^[\t ]*@/, end: /$/
       },
       {
         begin: /\b(print|exec)\(/ // don’t highlight keywords-turned-functions in Python 3
@@ -8469,8 +10399,12 @@ hljs.registerLanguage('ruleslanguage', function(hljs) {
       hljs.APOS_STRING_MODE,
       hljs.QUOTE_STRING_MODE,
       hljs.C_NUMBER_MODE,
-      { className: 'array',
-        begin: '\#[a-zA-Z\ \.]+'
+      {
+        className: 'array',
+        variants: [
+          {begin: '#\\s+[a-zA-Z\\ \\.]*', relevance: 0}, // looks like #-comment
+          {begin: '#[a-zA-Z\\ \\.]+'}
+        ]
       }
     ]
   };
@@ -8486,8 +10420,8 @@ hljs.registerLanguage('rust', function(hljs) {
       keyword:
         'alignof as be box break const continue crate do else enum extern ' +
         'false fn for if impl in let loop match mod mut offsetof once priv ' +
-        'proc pub pure ref return self sizeof static struct super trait true ' +
-        'type typeof unsafe unsized use virtual while yield ' +
+        'proc pub pure ref return self Self sizeof static struct super trait true ' +
+        'type typeof unsafe unsized use virtual while where yield ' +
         'int i8 i16 i32 i64 ' +
         'uint u8 u32 u64 ' +
         'float f32 f64 ' +
@@ -8540,9 +10474,11 @@ hljs.registerLanguage('rust', function(hljs) {
         illegal: '\\S'
       },
       {
-        beginKeywords: 'trait enum', end: '({|<)',
-        contains: [hljs.UNDERSCORE_TITLE_MODE],
-        illegal: '\\S'
+        beginKeywords: 'trait enum', end: '{',
+        contains: [
+          hljs.inherit(hljs.UNDERSCORE_TITLE_MODE, {endsParent: true})
+        ],
+        illegal: '[\\w\\d]'
       },
       {
         begin: hljs.IDENT_RE + '::'
@@ -9121,69 +11057,129 @@ hljs.registerLanguage('sql', function(hljs) {
       {
         className: 'operator',
         beginKeywords:
-          'begin end start commit rollback savepoint lock alter create drop rename call '+
-          'delete do handler insert load replace select truncate update set show pragma grant '+
-          'merge describe use explain help declare prepare execute deallocate savepoint release '+
-          'unlock purge reset change stop analyze cache flush optimize repair kill '+
+          'begin end start commit rollback savepoint lock alter create drop rename call ' +
+          'delete do handler insert load replace select truncate update set show pragma grant ' +
+          'merge describe use explain help declare prepare execute deallocate savepoint release|0 ' +
+          'unlock purge reset change stop analyze cache flush optimize repair kill ' +
           'install uninstall checksum restore check backup revoke',
         end: /;/, endsWithParent: true,
         keywords: {
           keyword:
-            'abs absolute acos action add adddate addtime aes_decrypt aes_encrypt after aggregate all allocate alter ' +
-            'analyze and any are as asc ascii asin assertion at atan atan2 atn2 authorization authors avg backup ' +
-            'before begin benchmark between bin binlog bit_and bit_count bit_length bit_or bit_xor both by ' +
-            'cache call cascade cascaded case cast catalog ceil ceiling chain change changed char_length ' +
-            'character_length charindex charset check checksum checksum_agg choose close coalesce ' +
-            'coercibility collate collation collationproperty column columns columns_updated commit compress concat ' +
-            'concat_ws concurrent connect connection connection_id consistent constraint constraints continue ' +
-            'contributors conv convert convert_tz corresponding cos cot count count_big crc32 create cross cume_dist ' +
-            'curdate current current_date current_time current_timestamp current_user cursor curtime data database ' +
-            'databases datalength date_add date_format date_sub dateadd datediff datefromparts datename ' +
-            'datepart datetime2fromparts datetimeoffsetfromparts day dayname dayofmonth dayofweek dayofyear ' +
-            'deallocate declare decode default deferrable deferred degrees delayed delete des_decrypt ' +
-            'des_encrypt des_key_file desc describe descriptor diagnostics difference disconnect distinct ' +
-            'distinctrow div do domain double drop dumpfile each else elt enclosed encode encrypt end end-exec ' +
-            'engine engines eomonth errors escape escaped event eventdata events except exception exec execute ' +
-            'exists exp explain export_set extended external extract fast fetch field fields find_in_set ' +
-            'first first_value floor flush for force foreign format found found_rows from from_base64 ' +
-            'from_days from_unixtime full function get get_format get_lock getdate getutcdate global go goto grant ' +
-            'grants greatest group group_concat grouping grouping_id gtid_subset gtid_subtract handler having help ' +
-            'hex high_priority hosts hour ident_current ident_incr ident_seed identified identity if ifnull ignore ' +
-            'iif ilike immediate in index indicator inet6_aton inet6_ntoa inet_aton inet_ntoa infile initially inner ' +
-            'innodb input insert install instr intersect into is is_free_lock is_ipv4 ' +
-            'is_ipv4_compat is_ipv4_mapped is_not is_not_null is_used_lock isdate isnull isolation join key kill ' +
-            'language last last_day last_insert_id last_value lcase lead leading least leaves left len lenght level ' +
-            'like limit lines ln load load_file local localtime localtimestamp locate lock log log10 log2 logfile ' +
-            'logs low_priority lower lpad ltrim make_set makedate maketime master master_pos_wait match matched max ' +
-            'md5 medium merge microsecond mid min minute mod mode module month monthname mutex name_const names ' +
-            'national natural nchar next no no_write_to_binlog not now nullif nvarchar oct ' +
-            'octet_length of old_password on only open optimize option optionally or ord order outer outfile output ' +
-            'pad parse partial partition password patindex percent_rank percentile_cont percentile_disc period_add ' +
-            'period_diff pi plugin position pow power pragma precision prepare preserve primary prior privileges ' +
-            'procedure procedure_analyze processlist profile profiles public publishingservername purge quarter ' +
-            'query quick quote quotename radians rand read references regexp relative relaylog release ' +
-            'release_lock rename repair repeat replace replicate reset restore restrict return returns reverse ' +
-            'revoke right rlike rollback rollup round row row_count rows rpad rtrim savepoint schema scroll ' +
-            'sec_to_time second section select serializable server session session_user set sha sha1 sha2 share ' +
-            'show sign sin size slave sleep smalldatetimefromparts snapshot some soname soundex ' +
-            'sounds_like space sql sql_big_result sql_buffer_result sql_cache sql_calc_found_rows sql_no_cache ' +
-            'sql_small_result sql_variant_property sqlstate sqrt square start starting status std ' +
-            'stddev stddev_pop stddev_samp stdev stdevp stop str str_to_date straight_join strcmp string stuff ' +
-            'subdate substr substring subtime subtring_index sum switchoffset sysdate sysdatetime sysdatetimeoffset ' +
-            'system_user sysutcdatetime table tables tablespace tan temporary terminated tertiary_weights then time ' +
-            'time_format time_to_sec timediff timefromparts timestamp timestampadd timestampdiff timezone_hour ' +
-            'timezone_minute to to_base64 to_days to_seconds todatetimeoffset trailing transaction translation ' +
-            'trigger trigger_nestlevel triggers trim truncate try_cast try_convert try_parse ucase uncompress ' +
-            'uncompressed_length unhex unicode uninstall union unique unix_timestamp unknown unlock update upgrade ' +
-            'upped upper usage use user user_resources using utc_date utc_time utc_timestamp uuid uuid_short ' +
-            'validate_password_strength value values var var_pop var_samp variables variance varp ' +
-            'version view warnings week weekday weekofyear weight_string when whenever where with work write xml ' +
-            'xor year yearweek zon',
+            'abort abs absolute acc acce accep accept access accessed accessible account acos action activate add ' +
+            'addtime admin administer advanced advise aes_decrypt aes_encrypt after agent aggregate ali alia alias ' +
+            'allocate allow alter always analyze ancillary and any anydata anydataset anyschema anytype apply ' +
+            'archive archived archivelog are as asc ascii asin assembly assertion associate asynchronous at atan ' +
+            'atn2 attr attri attrib attribu attribut attribute attributes audit authenticated authentication authid ' +
+            'authors auto autoallocate autodblink autoextend automatic availability avg backup badfile basicfile ' +
+            'before begin beginning benchmark between bfile bfile_base big bigfile bin binary_double binary_float ' +
+            'binlog bit_and bit_count bit_length bit_or bit_xor bitmap blob_base block blocksize body both bound ' +
+            'buffer_cache buffer_pool build bulk by byte byteordermark bytes c cache caching call calling cancel ' +
+            'capacity cascade cascaded case cast catalog category ceil ceiling chain change changed char_base ' +
+            'char_length character_length characters characterset charindex charset charsetform charsetid check ' +
+            'checksum checksum_agg child choose chr chunk class cleanup clear client clob clob_base clone close ' +
+            'cluster_id cluster_probability cluster_set clustering coalesce coercibility col collate collation ' +
+            'collect colu colum column column_value columns columns_updated comment commit compact compatibility ' +
+            'compiled complete composite_limit compound compress compute concat concat_ws concurrent confirm conn ' +
+            'connec connect connect_by_iscycle connect_by_isleaf connect_by_root connect_time connection ' +
+            'consider consistent constant constraint constraints constructor container content contents context ' +
+            'contributors controlfile conv convert convert_tz corr corr_k corr_s corresponding corruption cos cost ' +
+            'count count_big counted covar_pop covar_samp cpu_per_call cpu_per_session crc32 create creation ' +
+            'critical cross cube cume_dist curdate current current_date current_time current_timestamp current_user ' +
+            'cursor curtime customdatum cycle d data database databases datafile datafiles datalength date_add ' +
+            'date_cache date_format date_sub dateadd datediff datefromparts datename datepart datetime2fromparts ' +
+            'day day_to_second dayname dayofmonth dayofweek dayofyear days db_role_change dbtimezone ddl deallocate ' +
+            'declare decode decompose decrement decrypt deduplicate def defa defau defaul default defaults ' +
+            'deferred defi defin define degrees delayed delegate delete delete_all delimited demand dense_rank ' +
+            'depth dequeue des_decrypt des_encrypt des_key_file desc descr descri describ describe descriptor ' +
+            'deterministic diagnostics difference dimension direct_load directory disable disable_all ' +
+            'disallow disassociate discardfile disconnect diskgroup distinct distinctrow distribute distributed div ' +
+            'do document domain dotnet double downgrade drop dumpfile duplicate duration e each edition editionable ' +
+            'editions element ellipsis else elsif elt empty enable enable_all enclosed encode encoding encrypt ' +
+            'end end-exec endian enforced engine engines enqueue enterprise entityescaping eomonth error errors ' +
+            'escaped evalname evaluate event eventdata events except exception exceptions exchange exclude excluding ' +
+            'execu execut execute exempt exists exit exp expire explain export export_set extended extent external ' +
+            'external_1 external_2 externally extract f failed failed_login_attempts failover failure far fast ' +
+            'feature_set feature_value fetch field fields file file_name_convert filesystem_like_logging final ' +
+            'finish first first_value fixed flash_cache flashback floor flush following follows for forall force ' +
+            'form forma format found found_rows freelist freelists freepools fresh from from_base64 from_days ' +
+            'ftp full function g general generated get get_format get_lock getdate getutcdate global global_name ' +
+            'globally go goto grant grants greatest group group_concat group_id grouping grouping_id groups ' +
+            'gtid_subtract guarantee guard handler hash hashkeys having hea head headi headin heading heap help hex ' +
+            'hierarchy high high_priority hosts hour http i id ident_current ident_incr ident_seed identified ' +
+            'identity idle_time if ifnull ignore iif ilike ilm immediate import in include including increment ' +
+            'index indexes indexing indextype indicator indices inet6_aton inet6_ntoa inet_aton inet_ntoa infile ' +
+            'initial initialized initially initrans inmemory inner innodb input insert install instance instantiable ' +
+            'instr interface interleaved intersect into invalidate invisible is is_free_lock is_ipv4 is_ipv4_compat ' +
+            'is_not is_not_null is_used_lock isdate isnull isolation iterate java join json json_exists ' +
+            'k keep keep_duplicates key keys kill l language large last|0 last_day last_insert_id last_value lax lcase ' +
+            'lead leading least leaves left len lenght length less level levels library like like2 like4 likec limit ' +
+            'lines link|0 list|0 listagg little ln load load_file lob lobs local localtime localtimestamp locate ' +
+            'locator lock|0 locked log log10 log2 logfile logfiles logging logical logical_reads_per_call ' +
+            'logoff logon logs long loop|0 low low_priority lower lpad lrtrim ltrim m main make_set makedate maketime ' +
+            'managed management manual map mapping mask master master_pos_wait match matched materialized max ' +
+            'maxextents maximize maxinstances maxlen maxlogfiles maxloghistory maxlogmembers maxsize maxtrans ' +
+            'md5 measures median medium member memcompress memory merge microsecond mid migration min minextents ' +
+            'minimum mining minus minute minvalue missing mod mode model modification modify module monitoring month ' +
+            'months mount move movement multiset mutex n name name_const names nan national native natural nav nchar ' +
+            'nclob nested never new newline next nextval no no_write_to_binlog noarchivelog noaudit nobadfile ' +
+            'nocheck nocompress nocopy nocycle nodelay nodiscardfile noentityescaping noguarantee nokeep nologfile ' +
+            'nomapping nomaxvalue nominimize nominvalue nomonitoring none noneditionable nonschema noorder ' +
+            'nopr nopro noprom nopromp noprompt norely noresetlogs noreverse normal norowdependencies noschemacheck ' +
+            'noswitch not nothing notice notrim novalidate now nowait nth_value nullif nulls num numb numbe ' +
+            'nvarchar nvarchar2 object ocicoll ocidate ocidatetime ociduration ociinterval ociloblocator ocinumber ' +
+            'ociref ocirefcursor ocirowid ocistring ocitype oct octet_length of off offline offset oid oidindex old ' +
+            'on online only opaque open operations operator optimal optimize option optionally or oracle oracle_date ' +
+            'oradata ord ordaudio orddicom orddoc order ordimage ordinality ordvideo organization orlany orlvary ' +
+            'out outer outfile outline output over overflow overriding p package pad parallel parallel_enable ' +
+            'parameters parent parse partial partition partitions pascal passing password password_grace_time ' +
+            'password_lock_time password_reuse_max password_reuse_time password_verify_function patch path patindex ' +
+            'pctincrease pctthreshold pctused pctversion percent percent_rank percentile_cont percentile_disc ' +
+            'performance period period_add period_diff permanent physical pi pipe pipelined pivot pluggable plugin ' +
+            'policy position post_transaction pow power pragma prebuilt precedes preceding precision prediction ' +
+            'prediction_cost prediction_details prediction_probability prediction_set prepare present preserve ' +
+            'prior priority private private_sga privileges procedural procedure procedure_analyze processlist ' +
+            'profiles project prompt protection public publishingservername purge quarter query quick quiesce quota ' +
+            'quotename radians raise|0 rand range rank raw read reads readsize rebuild record records ' +
+            'recover recovery recursive recycle redo reduced ref reference referenced references referencing refresh ' +
+            'regexp_like register regr_avgx regr_avgy regr_count regr_intercept regr_r2 regr_slope regr_sxx regr_sxy ' +
+            'reject rekey relational relative relaylog release|0 release_lock relies_on relocate rely rem remainder ' +
+            'repair repeat replace replicate replication required reset resetlogs resize resource respect restore ' +
+            'restricted result result_cache resumable resume retention return returning returns reuse reverse revoke ' +
+            'right rlike role roles rollback rolling rollup round row row_count rowdependencies rowid rownum rows ' +
+            'rtrim rules safe salt sample save savepoint sb1 sb2 sb4 scan schema schemacheck scn scope scroll ' +
+            'sdo_georaster sdo_topo_geometry search sec_to_time second section securefile security seed segment ' +
+            'self sequence sequential serializable server servererror session session_user sessions_per_user set ' +
+            'sets settings sha sha1 sha2 share shared shared_pool short show shrink shutdown si_averagecolor ' +
+            'si_colorhistogram si_featurelist si_positionalcolor si_stillimage si_texture siblings sid sign sin ' +
+            'size size_t sizes skip slave sleep smalldatetimefromparts smallfile snapshot some soname sort soundex ' +
+            'source space sparse spfile split sql sql_big_result sql_buffer_result sql_cache sql_calc_found_rows ' +
+            'sql_small_result sql_variant_property sqlcode sqldata sqlerror sqlname sqlstate sqrt square standalone ' +
+            'standby start starting startup statement static statistics stats_binomial_test stats_crosstab ' +
+            'stats_ks_test stats_mode stats_mw_test stats_one_way_anova stats_t_test_ stats_t_test_indep ' +
+            'stats_t_test_one stats_t_test_paired stats_wsr_test status std stddev stddev_pop stddev_samp stdev ' +
+            'stop storage store stored str str_to_date straight_join strcmp strict string struct stuff style subdate ' +
+            'subpartition subpartitions substitutable substr substring subtime subtring_index subtype success sum ' +
+            'suspend switch switchoffset switchover sync synchronous synonym sys sys_xmlagg sysasm sysaux sysdate ' +
+            'sysdatetimeoffset sysdba sysoper system system_user sysutcdatetime t table tables tablespace tan tdo ' +
+            'template temporary terminated tertiary_weights test than then thread through tier ties time time_format ' +
+            'time_zone timediff timefromparts timeout timestamp timestampadd timestampdiff timezone_abbr ' +
+            'timezone_minute timezone_region to to_base64 to_date to_days to_seconds todatetimeoffset trace tracking ' +
+            'transaction transactional translate translation treat trigger trigger_nestlevel triggers trim truncate ' +
+            'try_cast try_convert try_parse type ub1 ub2 ub4 ucase unarchived unbounded uncompress ' +
+            'under undo unhex unicode uniform uninstall union unique unix_timestamp unknown unlimited unlock unpivot ' +
+            'unrecoverable unsafe unsigned until untrusted unusable unused update updated upgrade upped upper upsert ' +
+            'url urowid usable usage use use_stored_outlines user user_data user_resources users using utc_date ' +
+            'utc_timestamp uuid uuid_short validate validate_password_strength validation valist value values var ' +
+            'var_samp varcharc vari varia variab variabl variable variables variance varp varraw varrawc varray ' +
+            'verify version versions view virtual visible void wait wallet warning warnings week weekday weekofyear ' +
+            'wellformed when whene whenev wheneve whenever where while whitespace with within without work wrapped ' +
+            'xdb xml xmlagg xmlattributes xmlcast xmlcolattval xmlelement xmlexists xmlforest xmlindex xmlnamespaces ' +
+            'xmlpi xmlquery xmlroot xmlschema xmlserialize xmltable xmltype xor year year_to_month years yearweek',
           literal:
             'true false null',
           built_in:
-            'array bigint binary bit blob boolean char character date dec decimal float int integer interval number ' +
-            'numeric real serial smallint varchar varying int8 serial8 text'
+            'array bigint binary bit blob boolean char character date dec decimal float int int8 integer interval number ' +
+            'numeric real record serial serial8 smallint text varchar varying void'
         },
         contains: [
           {
@@ -10131,7 +12127,7 @@ hljs.registerLanguage('twig', function(hljs) {
   return {
     aliases: ['craftcms'],
     case_insensitive: true,
-    subLanguage: 'xml', subLanguageMode: 'continuous',
+    subLanguage: 'xml',
     contains: [
       hljs.COMMENT(/\{#/, /#}/),
       {
@@ -10154,8 +12150,8 @@ hljs.registerLanguage('typescript', function(hljs) {
     keyword:
       'in if for while finally var new function|0 do return void else break catch ' +
       'instanceof with throw case default try this switch continue typeof delete ' +
-      'let yield const class public private get set super interface extends' +
-      'static constructor implements enum export import declare type protected',
+      'let yield const class public private get set super ' +
+      'static implements enum export import declare type protected',
     literal:
       'true false null undefined NaN Infinity',
     built_in:
@@ -10166,7 +12162,7 @@ hljs.registerLanguage('typescript', function(hljs) {
       'Float64Array Int16Array Int32Array Int8Array Uint16Array Uint32Array ' +
       'Uint8Array Uint8ClampedArray ArrayBuffer DataView JSON Intl arguments require ' +
       'module console window document any number boolean string void'
-  }
+  };
 
   return {
     aliases: ['ts'],
@@ -10196,12 +12192,7 @@ hljs.registerLanguage('typescript', function(hljs) {
         contains: [
           hljs.C_LINE_COMMENT_MODE,
           hljs.C_BLOCK_COMMENT_MODE,
-          hljs.REGEXP_MODE,
-          { // E4X
-            begin: /</, end: />;/,
-            relevance: 0,
-            subLanguage: 'xml'
-          }
+          hljs.REGEXP_MODE
         ],
         relevance: 0
       },
@@ -10230,8 +12221,7 @@ hljs.registerLanguage('typescript', function(hljs) {
       },
       {
         className: 'constructor',
-        begin: 'constructor', end: /\{/, excludeEnd: true,
-        keywords: KEYWORDS,
+        beginKeywords: 'constructor', end: /\{/, excludeEnd: true,
         relevance: 10
       },
       {
@@ -10240,7 +12230,8 @@ hljs.registerLanguage('typescript', function(hljs) {
       },
       {
         className: 'interface',
-        beginKeywords: 'interface', end: /\{/, excludeEnd: true
+        beginKeywords: 'interface', end: /\{/, excludeEnd: true,
+        keywords: 'interface extends'
       },
       {
         begin: /\$[(.]/ // relevance booster for a pattern common to JS libs: `$(something)` and `$.something`
@@ -10404,7 +12395,7 @@ hljs.registerLanguage('vbscript', function(hljs) {
 
 hljs.registerLanguage('vbscript-html', function(hljs) {
   return {
-    subLanguage: 'xml', subLanguageMode: 'continuous',
+    subLanguage: 'xml',
     contains: [
       {
         begin: '<%', end: '%>',
@@ -10659,60 +12650,48 @@ hljs.registerLanguage('x86asm', function(hljs) {
           relevance: 0
         }
       ),
-      // Float number and x87 BCD
       {
         className: 'number',
-        begin: '\\b(?:([0-9][0-9_]*)?\\.[0-9_]*(?:[eE][+-]?[0-9_]+)?|(0[Xx])?[0-9][0-9_]*\\.?[0-9_]*(?:[pP](?:[+-]?[0-9_]+)?)?)\\b',
-        relevance: 0
-      },
-      // Hex number in $
-      {
-        className: 'number',
-        begin: '\\$[0-9][0-9A-Fa-f]*',
-        relevance: 0
-      },
-      // Number in H,X,D,T,Q,O,B,Y suffix
-      {
-        className: 'number',
-        begin: '\\b(?:[0-9A-Fa-f][0-9A-Fa-f_]*[HhXx]|[0-9][0-9_]*[DdTt]?|[0-7][0-7_]*[QqOo]|[0-1][0-1_]*[BbYy])\\b'
-      },
-      // Number in H,X,D,T,Q,O,B,Y prefix
-      {
-        className: 'number',
-        begin: '\\b(?:0[HhXx][0-9A-Fa-f_]+|0[DdTt][0-9_]+|0[QqOo][0-7_]+|0[BbYy][0-1_]+)\\b'
+        variants: [
+          // Float number and x87 BCD
+          {
+            begin: '\\b(?:([0-9][0-9_]*)?\\.[0-9_]*(?:[eE][+-]?[0-9_]+)?|' +
+                   '(0[Xx])?[0-9][0-9_]*\\.?[0-9_]*(?:[pP](?:[+-]?[0-9_]+)?)?)\\b',
+            relevance: 0
+          },
+
+          // Hex number in $
+          { begin: '\\$[0-9][0-9A-Fa-f]*', relevance: 0 },
+
+          // Number in H,D,T,Q,O,B,Y suffix
+          { begin: '\\b(?:[0-9A-Fa-f][0-9A-Fa-f_]*[Hh]|[0-9][0-9_]*[DdTt]?|[0-7][0-7_]*[QqOo]|[0-1][0-1_]*[BbYy])\\b' },
+
+          // Number in X,D,T,Q,O,B,Y prefix
+          { begin: '\\b(?:0[Xx][0-9A-Fa-f_]+|0[DdTt][0-9_]+|0[QqOo][0-7_]+|0[BbYy][0-1_]+)\\b'}
+        ]
       },
       // Double quote string
       hljs.QUOTE_STRING_MODE,
-      // Single-quoted string
       {
         className: 'string',
-        begin: '\'',
-        end: '[^\\\\]\'',
+        variants: [
+          // Single-quoted string
+          { begin: '\'', end: '[^\\\\]\'' },
+          // Backquoted string
+          { begin: '`', end: '[^\\\\]`' },
+          // Section name
+          { begin: '\\.[A-Za-z0-9]+' }
+        ],
         relevance: 0
       },
-      // Backquoted string
-      {
-        className: 'string',
-        begin: '`',
-        end: '[^\\\\]`',
-        relevance: 0
-      },
-      // Section name
-      {
-        className: 'string',
-        begin: '\\.[A-Za-z0-9]+',
-        relevance: 0
-      },
-      // Global label and local label
       {
         className: 'label',
-        begin: '^\\s*[A-Za-z._?][A-Za-z0-9_$#@~.?]*(:|\\s+label)',
-        relevance: 0
-      },
-      // Macro-local label
-      {
-        className: 'label',
-        begin: '^\\s*%%[A-Za-z0-9_$#@~.?]*:',
+        variants: [
+          // Global label and local label
+          { begin: '^\\s*[A-Za-z._?][A-Za-z0-9_$#@~.?]*(:|\\s+label)' },
+          // Macro-local label
+          { begin: '^\\s*%%[A-Za-z0-9_$#@~.?]*:' }
+        ],
         relevance: 0
       },
       // Macro parameter
@@ -10807,6 +12786,186 @@ hljs.registerLanguage('xl', function(hljs) {
     XL_ID,
     BASED_NUMBER,
     hljs.NUMBER_MODE
+    ]
+  };
+});
+
+hljs.registerLanguage('xquery', function(hljs) {
+  var KEYWORDS = 'for let if while then else return where group by xquery encoding version' +
+    'module namespace boundary-space preserve strip default collation base-uri ordering' +
+    'copy-namespaces order declare import schema namespace function option in allowing empty' +
+    'at tumbling window sliding window start when only end when previous next stable ascending' +
+    'descending empty greatest least some every satisfies switch case typeswitch try catch and' +
+    'or to union intersect instance of treat as castable cast map array delete insert into' +
+    'replace value rename copy modify update';
+  var LITERAL = 'false true xs:string xs:integer element item xs:date xs:datetime xs:float xs:double xs:decimal QName xs:anyURI xs:long xs:int xs:short xs:byte attribute';
+  var VAR = {
+    className: 'variable',
+    begin: /\$[a-zA-Z0-9\-]+/,
+    relevance: 5
+  };
+
+  var NUMBER = {
+    className: 'number',
+    begin: '(\\b0[0-7_]+)|(\\b0x[0-9a-fA-F_]+)|(\\b[1-9][0-9_]*(\\.[0-9_]+)?)|[0_]\\b',
+    relevance: 0
+  };
+
+  var STRING = {
+    className: 'string',
+    variants: [
+      {begin: /"/, end: /"/, contains: [{begin: /""/, relevance: 0}]},
+      {begin: /'/, end: /'/, contains: [{begin: /''/, relevance: 0}]}
+    ]
+  };
+
+  var ANNOTATION = {
+    className: 'decorator',
+    begin: '%\\w+'
+  };
+
+  var COMMENT = {
+    className: 'comment',
+    begin: '\\(:', end: ':\\)',
+    relevance: 10,
+    contains: [
+      {
+        className: 'doc', begin: '@\\w+'
+      }
+    ]
+  };
+
+  var METHOD = {
+    begin: '{', end: '}'
+  };
+
+  var CONTAINS = [
+    VAR,
+    STRING,
+    NUMBER,
+    COMMENT,
+    ANNOTATION,
+    METHOD
+  ];
+  METHOD.contains = CONTAINS;
+
+
+  return {
+    aliases: ['xpath', 'xq'],
+    case_insensitive: false,
+    lexemes: /[a-zA-Z\$][a-zA-Z0-9_:\-]*/,
+    illegal: /(proc)|(abstract)|(extends)|(until)|(#)/,
+    keywords: {
+      keyword: KEYWORDS,
+      literal: LITERAL
+    },
+    contains: CONTAINS
+  };
+});
+
+hljs.registerLanguage('zephir', function(hljs) {
+  var STRING = {
+    className: 'string',
+    contains: [hljs.BACKSLASH_ESCAPE],
+    variants: [
+      {
+        begin: 'b"', end: '"'
+      },
+      {
+        begin: 'b\'', end: '\''
+      },
+      hljs.inherit(hljs.APOS_STRING_MODE, {illegal: null}),
+      hljs.inherit(hljs.QUOTE_STRING_MODE, {illegal: null})
+    ]
+  };
+  var NUMBER = {variants: [hljs.BINARY_NUMBER_MODE, hljs.C_NUMBER_MODE]};
+  return {
+    aliases: ['zep'],
+    case_insensitive: true,
+    keywords:
+    'and include_once list abstract global private echo interface as static endswitch ' +
+    'array null if endwhile or const for endforeach self var let while isset public ' +
+    'protected exit foreach throw elseif include __FILE__ empty require_once do xor ' +
+    'return parent clone use __CLASS__ __LINE__ else break print eval new ' +
+    'catch __METHOD__ case exception default die require __FUNCTION__ ' +
+    'enddeclare final try switch continue endfor endif declare unset true false ' +
+    'trait goto instanceof insteadof __DIR__ __NAMESPACE__ ' +
+    'yield finally int uint long ulong char uchar double float bool boolean string' +
+    'likely unlikely',
+    contains: [
+      hljs.C_LINE_COMMENT_MODE,
+      hljs.HASH_COMMENT_MODE,
+      hljs.COMMENT(
+        '/\\*',
+        '\\*/',
+        {
+          contains: [
+            {
+              className: 'doctag',
+              begin: '@[A-Za-z]+'
+            }
+          ]
+        }
+      ),
+      hljs.COMMENT(
+        '__halt_compiler.+?;',
+        false,
+        {
+          endsWithParent: true,
+          keywords: '__halt_compiler',
+          lexemes: hljs.UNDERSCORE_IDENT_RE
+        }
+      ),
+      {
+        className: 'string',
+        begin: '<<<[\'"]?\\w+[\'"]?$', end: '^\\w+;',
+        contains: [hljs.BACKSLASH_ESCAPE]
+      },
+      {
+        // swallow composed identifiers to avoid parsing them as keywords
+        begin: /(::|->)+[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*/
+      },
+      {
+        className: 'function',
+        beginKeywords: 'function', end: /[;{]/, excludeEnd: true,
+        illegal: '\\$|\\[|%',
+        contains: [
+          hljs.UNDERSCORE_TITLE_MODE,
+          {
+            className: 'params',
+            begin: '\\(', end: '\\)',
+            contains: [
+              'self',
+              hljs.C_BLOCK_COMMENT_MODE,
+              STRING,
+              NUMBER
+            ]
+          }
+        ]
+      },
+      {
+        className: 'class',
+        beginKeywords: 'class interface', end: '{', excludeEnd: true,
+        illegal: /[:\(\$"]/,
+        contains: [
+          {beginKeywords: 'extends implements'},
+          hljs.UNDERSCORE_TITLE_MODE
+        ]
+      },
+      {
+        beginKeywords: 'namespace', end: ';',
+        illegal: /[\.']/,
+        contains: [hljs.UNDERSCORE_TITLE_MODE]
+      },
+      {
+        beginKeywords: 'use', end: ';',
+        contains: [hljs.UNDERSCORE_TITLE_MODE]
+      },
+      {
+        begin: '=>' // No markup, just a relevance booster
+      },
+      STRING,
+      NUMBER
     ]
   };
 });
