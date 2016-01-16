@@ -1,4 +1,4 @@
-/*! highlight.js v9.0.0 | BSD3 License | git.io/hljslicense */
+/*! highlight.js v9.1.0 | BSD3 License | git.io/hljslicense */
 (function(factory) {
 
   // Setup highlight.js for different environments. First is Node.js or
@@ -1085,6 +1085,158 @@ hljs.registerLanguage('applescript', function(hljs) {
   };
 });
 
+hljs.registerLanguage('arduino', function(hljs) {
+
+	// CPP Strings
+	var STRINGS = {
+	    className: 'string',
+	    variants: [
+	      hljs.inherit(hljs.QUOTE_STRING_MODE, { begin: '((u8?|U)|L)?"' }),
+	      {
+	        begin: '(u8?|U)?R"', end: '"',
+	        contains: [hljs.BACKSLASH_ESCAPE]
+	      },
+	      {
+	        begin: '\'\\\\?.', end: '\'',
+	        illegal: '.'
+	      }
+	    ]
+	  };
+
+	// CPP preprocessor
+	var PREPROCESSOR =       {
+	    className: 'meta',
+	    begin: '#', end: '$',
+	    keywords: {'meta-keyword': 'if else elif endif define undef warning error line ' +
+	                  'pragma ifdef ifndef'},
+	    contains: [
+	      {
+	        begin: /\\\n/, relevance: 0
+	      },
+	      {
+	        beginKeywords: 'include', end: '$',
+	        keywords: {'meta-keyword': 'include'},
+	        contains: [
+	          hljs.inherit(STRINGS, {className: 'meta-string'}),
+	          {
+	            className: 'meta-string',
+	            begin: '<', end: '>',
+	            illegal: '\\n',
+	          }
+	        ]
+	      },
+	      STRINGS,
+	      hljs.C_LINE_COMMENT_MODE,
+	      hljs.C_BLOCK_COMMENT_MODE
+	    ]
+	  };
+
+  	return {
+	    keywords: {
+	      function: 'setup loop while catch for if do goto try switch case else default break continue return',
+	      keyword: 'boolean byte word string String array ' +
+	      // CPP keywords
+	      'int float private char export virtual operator sizeof uint8_t uint16_t ' +
+	      'uint32_t uint64_t int8_t int16_t int32_t int64_t ' +
+	      'dynamic_cast typedef const_cast const struct static_cast union namespace ' +
+	      'unsigned long volatile static protected bool template mutable public friend ' +
+	      'auto void enum extern using class asm typeid ' +
+	      'short reinterpret_cast double register explicit signed typename this ' +
+	      'inline delete alignof constexpr decltype ' +
+	      'noexcept static_assert thread_local restrict _Bool complex _Complex _Imaginary ' +
+	      'atomic_bool atomic_char atomic_schar ' +
+	      'atomic_uchar atomic_short atomic_ushort atomic_int atomic_uint atomic_long atomic_ulong atomic_llong ' +
+	      'atomic_ullong',
+	      built_in: 'KeyboardController MouseController SoftwareSerial ' + 
+	            'EthernetServer EthernetClient LiquidCrystal ' + 
+	            'RobotControl GSMVoiceCall EthernetUDP EsploraTFT ' + 
+	            'HttpClient RobotMotor WiFiClient GSMScanner ' + 
+	            'FileSystem Scheduler GSMServer YunClient YunServer ' + 
+	            'IPAddress GSMClient GSMModem Keyboard Ethernet ' + 
+	            'Console GSMBand Esplora Stepper Process ' + 
+	            'WiFiUDP GSM_SMS Mailbox USBHost Firmata PImage ' + 
+	            'Client Server GSMPIN FileIO Bridge Serial ' + 
+	            'EEPROM Stream Mouse Audio Servo File Task ' + 
+	            'GPRS WiFi Wire TFT GSM SPI SD ' + 
+	            'runShellCommandAsynchronously analogWriteResolution ' + 
+	            'retrieveCallingNumber printFirmwareVersion ' + 
+	            'analogReadResolution sendDigitalPortPair ' + 
+	            'noListenOnLocalhost readJoystickButton setFirmwareVersion ' + 
+	            'readJoystickSwitch scrollDisplayRight getVoiceCallStatus ' + 
+	            'scrollDisplayLeft writeMicroseconds delayMicroseconds ' + 
+	            'beginTransmission getSignalStrength runAsynchronously ' + 
+	            'getAsynchronously listenOnLocalhost getCurrentCarrier ' + 
+	            'readAccelerometer messageAvailable sendDigitalPorts ' + 
+	            'lineFollowConfig countryNameWrite runShellCommand ' + 
+	            'readStringUntil rewindDirectory readTemperature ' + 
+	            'setClockDivider readLightSensor endTransmission ' + 
+	            'analogReference detachInterrupt countryNameRead ' + 
+	            'attachInterrupt encryptionType readBytesUntil ' + 
+	            'robotNameWrite readMicrophone robotNameRead cityNameWrite ' + 
+	            'userNameWrite readJoystickY readJoystickX mouseReleased ' + 
+	            'openNextFile scanNetworks noInterrupts digitalWrite ' + 
+	            'beginSpeaker mousePressed isActionDone mouseDragged ' + 
+	            'displayLogos noAutoscroll addParameter remoteNumber ' + 
+	            'getModifiers keyboardRead userNameRead waitContinue ' + 
+	            'processInput parseCommand printVersion readNetworks ' + 
+	            'writeMessage blinkVersion cityNameRead readMessage ' + 
+	            'setDataMode parsePacket isListening setBitOrder ' + 
+	            'beginPacket isDirectory motorsWrite drawCompass ' + 
+	            'digitalRead clearScreen serialEvent rightToLeft ' + 
+	            'setTextSize leftToRight requestFrom keyReleased ' + 
+	            'compassRead analogWrite interrupts WiFiServer ' + 
+	            'disconnect playMelody parseFloat autoscroll ' + 
+	            'getPINUsed setPINUsed setTimeout sendAnalog ' + 
+	            'readSlider analogRead beginWrite createChar ' + 
+	            'motorsStop keyPressed tempoWrite readButton ' + 
+	            'subnetMask debugPrint macAddress writeGreen ' + 
+	            'randomSeed attachGPRS readString sendString ' + 
+	            'remotePort releaseAll mouseMoved background ' + 
+	            'getXChange getYChange answerCall getResult ' +  
+	            'voiceCall endPacket constrain getSocket writeJSON ' + 
+	            'getButton available connected findUntil readBytes ' + 
+	            'exitValue readGreen writeBlue startLoop IPAddress ' + 
+	            'isPressed sendSysex pauseMode gatewayIP setCursor ' + 
+	            'getOemKey tuneWrite noDisplay loadImage switchPIN ' + 
+	            'onRequest onReceive changePIN playFile noBuffer ' + 
+	            'parseInt overflow checkPIN knobRead beginTFT ' + 
+	            'bitClear updateIR bitWrite position writeRGB ' + 
+	            'highByte writeRed setSpeed readBlue noStroke ' + 
+	            'remoteIP transfer shutdown hangCall beginSMS ' + 
+	            'endWrite attached maintain noCursor checkReg ' + 
+	            'checkPUK shiftOut isValid shiftIn pulseIn ' + 
+	            'connect println localIP pinMode getIMEI ' + 
+	            'display noBlink process getBand running beginSD ' + 
+	            'drawBMP lowByte setBand release bitRead prepare ' + 
+	            'pointTo readRed setMode noFill remove listen ' + 
+	            'stroke detach attach noTone exists buffer ' + 
+	            'height bitSet circle config cursor random ' + 
+	            'IRread setDNS endSMS getKey micros ' + 
+	            'millis begin print write ready flush width ' + 
+	            'isPIN blink clear press mkdir rmdir close ' + 
+	            'point yield image BSSID click delay ' + 
+	            'read text move peek beep rect line open ' + 
+	            'seek fill size turn stop home find ' + 
+	            'step tone sqrt RSSI SSID ' + 
+	            'end bit tan cos sin pow map abs max ' + 
+	            'min get run put',
+	        symbol: 'DIGITAL_MESSAGE FIRMATA_STRING ANALOG_MESSAGE ' + 
+	            'REPORT_DIGITAL REPORT_ANALOG INPUT_PULLUP ' + 
+	            'SET_PIN_MODE INTERNAL2V56 SYSTEM_RESET LED_BUILTIN ' + 
+	            'INTERNAL1V1 SYSEX_START INTERNAL EXTERNAL ' + 
+	            'DEFAULT OUTPUT INPUT HIGH LOW' 
+	    },
+	    contains: [
+	      PREPROCESSOR,
+	      hljs.C_LINE_COMMENT_MODE,
+	      hljs.C_BLOCK_COMMENT_MODE,
+	      hljs.APOS_STRING_MODE,
+	      hljs.QUOTE_STRING_MODE,
+	      hljs.C_NUMBER_MODE
+	    ]
+    };
+});
+
 hljs.registerLanguage('armasm', function(hljs) {
     //local labels: %?[FB]?[AT]?\d{1,2}\w+
   return {
@@ -1620,7 +1772,7 @@ hljs.registerLanguage('autohotkey', function(hljs) {
     case_insensitive: true,
     keywords: {
       keyword: 'Break Continue Else Gosub If Loop Return While',
-      literal: 'A true false NOT AND OR',
+      literal: 'A|0 true false NOT AND OR',
       built_in: 'ComSpec Clipboard ClipboardAll ErrorLevel',
     },
     contains: [
@@ -3581,6 +3733,57 @@ hljs.registerLanguage('bash', function(hljs) {
   };
 });
 
+hljs.registerLanguage('basic', function(hljs) {
+  return {
+    case_insensitive: true,
+    illegal: '^\.',
+    // Support explicitely typed variables that end with $%! or #.
+    lexemes: '[a-zA-Z][a-zA-Z0-9_\$\%\!\#]*',
+    keywords: {
+        keyword:
+          'ABS ASC AND ATN AUTO|0 BEEP BLOAD|10 BSAVE|10 CALL CALLS CDBL CHAIN CHDIR CHR$|10 CINT CIRCLE ' +
+          'CLEAR CLOSE CLS COLOR COM COMMON CONT COS CSNG CSRLIN CVD CVI CVS DATA DATE$ ' +
+          'DEFDBL DEFINT DEFSNG DEFSTR DEF|0 SEG USR DELETE DIM DRAW EDIT END ENVIRON ENVIRON$ ' +
+          'EOF EQV ERASE ERDEV ERDEV$ ERL ERR ERROR EXP FIELD FILES FIX FOR|0 FRE GET GOSUB|10 GOTO ' +
+          'HEX$ IF|0 THEN ELSE|0 INKEY$ INP INPUT INPUT# INPUT$ INSTR IMP INT IOCTL IOCTL$ KEY ON ' +
+          'OFF LIST KILL LEFT$ LEN LET LINE LLIST LOAD LOC LOCATE LOF LOG LPRINT USING LSET ' +
+          'MERGE MID$ MKDIR MKD$ MKI$ MKS$ MOD NAME NEW NEXT NOISE NOT OCT$ ON OR PEN PLAY STRIG OPEN OPTION ' +
+          'BASE OUT PAINT PALETTE PCOPY PEEK PMAP POINT POKE POS PRINT PRINT] PSET PRESET ' +
+          'PUT RANDOMIZE READ REM RENUM RESET|0 RESTORE RESUME RETURN|0 RIGHT$ RMDIR RND RSET ' +
+          'RUN SAVE SCREEN SGN SHELL SIN SOUND SPACE$ SPC SQR STEP STICK STOP STR$ STRING$ SWAP ' +
+          'SYSTEM TAB TAN TIME$ TIMER TROFF TRON TO USR VAL VARPTR VARPTR$ VIEW WAIT WHILE ' +
+          'WEND WIDTH WINDOW WRITE XOR'
+    },
+    contains: [
+      hljs.QUOTE_STRING_MODE,
+      hljs.COMMENT('REM', '$', {relevance: 10}),
+      hljs.COMMENT('\'', '$', {relevance: 0}),
+      {
+        // Match line numbers
+        className: 'symbol',
+        begin: '^[0-9]+\ ',
+        relevance: 10
+      },
+      {
+        // Match typed numeric constants (1000, 12.34!, 1.2e5, 1.5#, 1.2D2)
+        className: 'number',
+        begin: '\\b([0-9]+[0-9edED\.]*[#\!]?)',
+        relevance: 0
+      },
+      {
+        // Match hexadecimal numbers (&Hxxxx)
+        className: 'number',
+        begin: '(\&[hH][0-9a-fA-F]{1,4})'
+      },
+      {
+        // Match octal numbers (&Oxxxxxx)
+        className: 'number',
+        begin: '(\&[oO][0-7]{1,6})'
+      }
+    ]
+  };
+});
+
 hljs.registerLanguage('brainfuck', function(hljs){
   var LITERAL = {
     className: 'literal',
@@ -4123,12 +4326,11 @@ hljs.registerLanguage('cos', function cos (hljs) {
     relevance: 0
   };
 
-  var METHOD_TITLE = hljs.IDENT_RE + "\\s*\\(";
-
   var COS_KEYWORDS = {
     keyword: [
 
-      "break", "catch", "close", "continue", "do", "d", "else",
+      "property", "parameter", "class", "classmethod", "clientmethod", "extends",
+      "as", "break", "catch", "close", "continue", "do", "d", "else",
       "elseif", "for", "goto", "halt", "hang", "h", "if", "job",
       "j", "kill", "k", "lock", "l", "merge", "new", "open", "quit",
       "q", "read", "r", "return", "set", "s", "tcommit", "throw",
@@ -4187,21 +4389,30 @@ hljs.registerLanguage('cos', function cos (hljs) {
       STRINGS,
       hljs.C_LINE_COMMENT_MODE,
       hljs.C_BLOCK_COMMENT_MODE,
-      { // functions
-        className: "built_in",
-        begin: /\$\$?[a-zA-Z]+/
+      {
+        className: "comment",
+        begin: /;/, end: "$",
+        relevance: 0
       },
-      { // macro
-        className: "keyword",
+      { // Functions and user-defined functions: write $ztime(60*60*3), $$myFunc(10), $$^Val(1)
+        className: "built_in",
+        begin: /(?:\$\$?|\.\.)\^?[a-zA-Z]+/
+      },
+      { // Macro command: quit $$$OK
+        className: "built_in",
         begin: /\$\$\$[a-zA-Z]+/
       },
-      { // globals
+      { // Special (global) variables: write %request.Content; Built-in classes: %Library.Integer
+        className: "built_in",
+        begin: /%[a-z]+(?:\.[a-z]+)*/
+      },
+      { // Global variable: set ^globalName = 12 write ^globalName
         className: "symbol",
         begin: /\^%?[a-zA-Z][\w]*/
       },
-      { // static class reference constructions
-        className: 'keyword',
-        begin: /##class/
+      { // Some control constructions: do ##class(Package.ClassName).Method(), ##super()
+        className: "keyword",
+        begin: /##class|##super|#define|#dim/
       },
 
       // sub-languages: are not fully supported by hljs by 11/15/2015
@@ -4217,8 +4428,9 @@ hljs.registerLanguage('cos', function cos (hljs) {
         subLanguage: "javascript"
       },
       {
-        begin: /&html<\s*</, end: />\s*>/, // brakes first tag, but the only way to embed valid html
-        subLanguage: "xml" // no html?
+        // this brakes first and last tag, but this is the only way to embed a valid html
+        begin: /&html<\s*</, end: />\s*>/,
+        subLanguage: "xml"
       }
     ]
   };
@@ -4804,7 +5016,7 @@ hljs.registerLanguage('css', function(hljs) {
       },
       {
         className: 'selector-pseudo',
-        begin: /:(:)?[a-zA-Z0-9\_\-\+\(\)"']+/
+        begin: /:(:)?[a-zA-Z0-9\_\-\+\(\)"'.]+/
       },
       {
         begin: '@(font-face|page)',
@@ -5588,6 +5800,130 @@ hljs.registerLanguage('dos', function(hljs) {
   };
 });
 
+hljs.registerLanguage('dts', function(hljs) {
+  var STRINGS = {
+    className: 'string',
+    variants: [
+      hljs.inherit(hljs.QUOTE_STRING_MODE, { begin: '((u8?|U)|L)?"' }),
+      {
+        begin: '(u8?|U)?R"', end: '"',
+        contains: [hljs.BACKSLASH_ESCAPE]
+      },
+      {
+        begin: '\'\\\\?.', end: '\'',
+        illegal: '.'
+      }
+    ]
+  };
+
+  var NUMBERS = {
+    className: 'number',
+    variants: [
+      { begin: '\\b(\\d+(\\.\\d*)?|\\.\\d+)(u|U|l|L|ul|UL|f|F)' },
+      { begin: hljs.C_NUMBER_RE }
+    ],
+    relevance: 0
+  };
+
+  var PREPROCESSOR = {
+    className: 'meta',
+    begin: '#', end: '$',
+    keywords: {'meta-keyword': 'if else elif endif define undef ifdef ifndef'},
+    contains: [
+      {
+        begin: /\\\n/, relevance: 0
+      },
+      {
+        beginKeywords: 'include', end: '$',
+        keywords: {'meta-keyword': 'include'},
+        contains: [
+          hljs.inherit(STRINGS, {className: 'meta-string'}),
+          {
+            className: 'meta-string',
+            begin: '<', end: '>',
+            illegal: '\\n',
+          }
+        ]
+      },
+      STRINGS,
+      hljs.C_LINE_COMMENT_MODE,
+      hljs.C_BLOCK_COMMENT_MODE
+    ]
+  };
+
+  var DTS_REFERENCE = {
+    className: 'variable',
+    begin: '\\&[a-z\\d_]*\\b'
+  };
+
+  var DTS_KEYWORD = {
+    className: 'meta-keyword',
+    begin: '/[a-z][a-z\\d-]*/'
+  };
+
+  var DTS_LABEL = {
+    className: 'symbol',
+    begin: '^\\s*[a-zA-Z_][a-zA-Z\\d_]*:',
+  };
+
+  var DTS_CELL_PROPERTY = {
+    className: 'params',
+    begin: '<',
+    end: '>',
+    contains: [
+      NUMBERS,
+      DTS_REFERENCE,
+    ],
+  };
+
+  var DTS_NODE = {
+    className: 'class',
+    begin: /[a-zA-Z_][a-zA-Z\d_@]*\s{/,
+    end: /[{;=]/,
+    returnBegin: true,
+    excludeEnd: true,
+  };
+
+  var DTS_ROOT_NODE = {
+    className: 'class',
+    begin: '/\\s*{',
+    end: '};',
+    relevance: 10,
+    contains: [
+      DTS_REFERENCE,
+      DTS_KEYWORD,
+      DTS_LABEL,
+      DTS_NODE,
+      DTS_CELL_PROPERTY,
+      hljs.C_LINE_COMMENT_MODE,
+      hljs.C_BLOCK_COMMENT_MODE,
+      NUMBERS,
+      STRINGS,
+    ],
+  };
+
+  return {
+    keywords: "",
+    contains: [
+      DTS_ROOT_NODE,
+      DTS_REFERENCE,
+      DTS_KEYWORD,
+      DTS_LABEL,
+      DTS_NODE,
+      DTS_CELL_PROPERTY,
+      hljs.C_LINE_COMMENT_MODE,
+      hljs.C_BLOCK_COMMENT_MODE,
+      NUMBERS,
+      STRINGS,
+      PREPROCESSOR,
+      {
+        begin: hljs.IDENT_RE + '::',
+        keywords: "",
+      },
+    ]
+  };
+});
+
 hljs.registerLanguage('dust', function(hljs) {
   var EXPRESSION_KEYWORDS = 'if eq ne lt lte gt gte select default math sep';
   return {
@@ -6357,6 +6693,228 @@ hljs.registerLanguage('gams', function (hljs) {
       {
         className: 'number',
         begin: '\\$[a-zA-Z0-9]+'
+      }
+    ]
+  };
+});
+
+hljs.registerLanguage('gauss', function(hljs) {
+  var KEYWORDS = {
+    keyword: 'and bool break|0 call callexe checkinterrupt clear clearg closeall cls comlog compile ' +
+              'continue create debug declare delete disable dlibrary|10 dllcall do|0 dos ed edit else|0 ' +
+              'elseif enable end endfor|10 endif|10 endp|10 endo|10 errorlog|10 errorlogat expr external fn ' +
+              'for|0 format goto gosub|0 graph if|0 keyword let lib library line load loadarray loadexe ' +
+              'loadf|10 loadk|10 loadm|10 loadp loads loadx local locate loopnextindex lprint lpwidth lshow ' +
+              'matrix msym ndpclex new not open or output outwidth plot plotsym pop prcsn print ' +
+              'printdos proc|10 push retp|10 return|0 rndcon rndmod rndmult rndseed run save saveall screen ' +
+              'scroll setarray show sparse stop string struct system trace trap|10 threadfor|10 ' +
+              'threadendfor|10 threadbegin|10 threadjoin|10 threadstat|10 threadend|10 until use while winprint',
+    built_in: 'abs acf aconcat aeye amax amean AmericanBinomCall AmericanBinomCall_Greeks AmericanBinomCall_ImpVol ' +
+              'AmericanBinomPut AmericanBinomPut_Greeks AmericanBinomPut_ImpVol AmericanBSCall AmericanBSCall_Greeks ' +
+              'AmericanBSCall_ImpVol AmericanBSPut AmericanBSPut_Greeks AmericanBSPut_ImpVol amin amult annotationGetDefaults ' +
+              'annotationSetBkd annotationSetFont annotationSetLineColor annotationSetLineStyle annotationSetLineThickness ' +
+              'annualTradingDays arccos arcsin areshape arrayalloc arrayindex arrayinit arraytomat asciiload asclabel astd ' +
+              'astds asum atan atan2 atranspose axmargin balance band bandchol bandcholsol bandltsol bandrv bandsolpd bar ' +
+              'base10 begwind besselj bessely beta box boxcox cdfBeta cdfBetaInv cdfBinomial cdfBinomialInv cdfBvn cdfBvn2 ' +
+              'cdfBvn2e cdfCauchy cdfCauchyInv cdfChic cdfChii cdfChinc cdfChincInv cdfExp cdfExpInv cdfFc cdfFnc cdfFncInv ' +
+              'cdfGam cdfGenPareto cdfHyperGeo cdfLaplace cdfLaplaceInv cdfLogistic cdfLogisticInv cdfmControlCreate cdfMvn ' +
+              'cdfMvn2e cdfMvnce cdfMvne cdfMvt2e cdfMvtce cdfMvte cdfN cdfN2 cdfNc cdfNegBinomial cdfNegBinomialInv cdfNi ' +
+              'cdfPoisson cdfPoissonInv cdfRayleigh cdfRayleighInv cdfTc cdfTci cdfTnc cdfTvn cdfWeibull cdfWeibullInv cdir ' +
+              'ceil ChangeDir chdir chiBarSquare chol choldn cholsol cholup chrs close code cols colsf combinate combinated ' +
+              'complex con cond conj cons ConScore contour conv convertsatostr convertstrtosa corrm corrms corrvc corrx corrxs ' +
+              'cos cosh counts countwts crossprd crout croutp csrcol csrlin csvReadM csvReadSA cumprodc cumsumc curve cvtos ' +
+              'datacreate datacreatecomplex datalist dataload dataloop dataopen datasave date datestr datestring datestrymd ' +
+              'dayinyr dayofweek dbAddDatabase|10 dbClose|10 dbCommit|10 dbCreateQuery|10 dbExecQuery|10 dbGetConnectOptions|10 dbGetDatabaseName|10 ' +
+              'dbGetDriverName|10 dbGetDrivers|10 dbGetHostName|10 dbGetLastErrorNum|10 dbGetLastErrorText|10 dbGetNumericalPrecPolicy|10 ' +
+              'dbGetPassword|10 dbGetPort|10 dbGetTableHeaders|10 dbGetTables|10 dbGetUserName|10 dbHasFeature|10 dbIsDriverAvailable|10 dbIsOpen|10 ' +
+              'dbIsOpenError|10 dbOpen|10 dbQueryBindValue|10 dbQueryClear|10 dbQueryCols|10 dbQueryExecPrepared|10 dbQueryFetchAllM|10 dbQueryFetchAllSA|10 ' +
+              'dbQueryFetchOneM|10 dbQueryFetchOneSA|10 dbQueryFinish|10 dbQueryGetBoundValue|10 dbQueryGetBoundValues|10 dbQueryGetField|10 ' +
+              'dbQueryGetLastErrorNum|10 dbQueryGetLastErrorText|10 dbQueryGetLastInsertID|10 dbQueryGetLastQuery|10 dbQueryGetPosition|10 ' +
+              'dbQueryIsActive|10 dbQueryIsForwardOnly|10 dbQueryIsNull|10 dbQueryIsSelect|10 dbQueryIsValid|10 dbQueryPrepare|10 dbQueryRows|10 ' +
+              'dbQuerySeek|10 dbQuerySeekFirst|10 dbQuerySeekLast|10 dbQuerySeekNext|10 dbQuerySeekPrevious|10 dbQuerySetForwardOnly|10 ' +
+              'dbRemoveDatabase|10 dbRollback|10 dbSetConnectOptions|10 dbSetDatabaseName|10 dbSetHostName|10 dbSetNumericalPrecPolicy|10 ' +
+              'dbSetPort|10 dbSetUserName|10 dbTransaction|10 DeleteFile delif delrows denseToSp denseToSpRE denToZero design det detl ' +
+              'dfft dffti diag diagrv digamma doswin DOSWinCloseall DOSWinOpen dotfeq dotfeqmt dotfge dotfgemt dotfgt dotfgtmt ' +
+              'dotfle dotflemt dotflt dotfltmt dotfne dotfnemt draw drop dsCreate dstat dstatmt dstatmtControlCreate dtdate dtday ' +
+              'dttime dttodtv dttostr dttoutc dtvnormal dtvtodt dtvtoutc dummy dummybr dummydn eig eigh eighv eigv elapsedTradingDays ' +
+              'endwind envget eof eqSolve eqSolvemt eqSolvemtControlCreate eqSolvemtOutCreate eqSolveset erf erfc erfccplx erfcplx error ' +
+              'etdays ethsec etstr EuropeanBinomCall EuropeanBinomCall_Greeks EuropeanBinomCall_ImpVol EuropeanBinomPut ' +
+              'EuropeanBinomPut_Greeks EuropeanBinomPut_ImpVol EuropeanBSCall EuropeanBSCall_Greeks EuropeanBSCall_ImpVol ' +
+              'EuropeanBSPut EuropeanBSPut_Greeks EuropeanBSPut_ImpVol exctsmpl exec execbg exp extern eye fcheckerr fclearerr feq ' +
+              'feqmt fflush fft ffti fftm fftmi fftn fge fgemt fgets fgetsa fgetsat fgetst fgt fgtmt fileinfo filesa fle flemt ' +
+              'floor flt fltmt fmod fne fnemt fonts fopen formatcv formatnv fputs fputst fseek fstrerror ftell ftocv ftos ftostrC ' +
+              'gamma gammacplx gammaii gausset gdaAppend gdaCreate gdaDStat gdaDStatMat gdaGetIndex gdaGetName gdaGetNames gdaGetOrders ' +
+              'gdaGetType gdaGetTypes gdaGetVarInfo gdaIsCplx gdaLoad gdaPack gdaRead gdaReadByIndex gdaReadSome gdaReadSparse ' +
+              'gdaReadStruct gdaReportVarInfo gdaSave gdaUpdate gdaUpdateAndPack gdaVars gdaWrite gdaWrite32 gdaWriteSome getarray ' +
+              'getdims getf getGAUSShome getmatrix getmatrix4D getname getnamef getNextTradingDay getNextWeekDay getnr getorders ' +
+              'getpath getPreviousTradingDay getPreviousWeekDay getRow getscalar3D getscalar4D getTrRow getwind glm gradcplx gradMT ' +
+              'gradMTm gradMTT gradMTTm gradp graphprt graphset hasimag header headermt hess hessMT hessMTg hessMTgw hessMTm ' +
+              'hessMTmw hessMTT hessMTTg hessMTTgw hessMTTm hessMTw hessp hist histf histp hsec imag indcv indexcat indices indices2 ' +
+              'indicesf indicesfn indnv indsav indx integrate1d integrateControlCreate intgrat2 intgrat3 inthp1 inthp2 inthp3 inthp4 ' +
+              'inthpControlCreate intquad1 intquad2 intquad3 intrleav intrleavsa intrsect intsimp inv invpd invswp iscplx iscplxf ' +
+              'isden isinfnanmiss ismiss key keyav keyw lag lag1 lagn lapEighb lapEighi lapEighvb lapEighvi lapgEig lapgEigh lapgEighv ' +
+              'lapgEigv lapgSchur lapgSvdcst lapgSvds lapgSvdst lapSvdcusv lapSvds lapSvdusv ldlp ldlsol linSolve listwise ln lncdfbvn ' +
+              'lncdfbvn2 lncdfmvn lncdfn lncdfn2 lncdfnc lnfact lngammacplx lnpdfmvn lnpdfmvt lnpdfn lnpdft loadd loadstruct loadwind ' +
+              'loess loessmt loessmtControlCreate log loglog logx logy lower lowmat lowmat1 ltrisol lu lusol machEpsilon make makevars ' +
+              'makewind margin matalloc matinit mattoarray maxbytes maxc maxindc maxv maxvec mbesselei mbesselei0 mbesselei1 mbesseli ' +
+              'mbesseli0 mbesseli1 meanc median mergeby mergevar minc minindc minv miss missex missrv moment momentd movingave ' +
+              'movingaveExpwgt movingaveWgt nextindex nextn nextnevn nextwind ntos null null1 numCombinations ols olsmt olsmtControlCreate ' +
+              'olsqr olsqr2 olsqrmt ones optn optnevn orth outtyp pacf packedToSp packr parse pause pdfCauchy pdfChi pdfExp pdfGenPareto ' +
+              'pdfHyperGeo pdfLaplace pdfLogistic pdfn pdfPoisson pdfRayleigh pdfWeibull pi pinv pinvmt plotAddArrow plotAddBar plotAddBox ' +
+              'plotAddHist plotAddHistF plotAddHistP plotAddPolar plotAddScatter plotAddShape plotAddTextbox plotAddTS plotAddXY plotArea ' +
+              'plotBar plotBox plotClearLayout plotContour plotCustomLayout plotGetDefaults plotHist plotHistF plotHistP plotLayout ' +
+              'plotLogLog plotLogX plotLogY plotOpenWindow plotPolar plotSave plotScatter plotSetAxesPen plotSetBar plotSetBarFill ' +
+              'plotSetBarStacked plotSetBkdColor plotSetFill plotSetGrid plotSetLegend plotSetLineColor plotSetLineStyle plotSetLineSymbol ' +
+              'plotSetLineThickness plotSetNewWindow plotSetTitle plotSetWhichYAxis plotSetXAxisShow plotSetXLabel plotSetXRange ' +
+              'plotSetXTicInterval plotSetXTicLabel plotSetYAxisShow plotSetYLabel plotSetYRange plotSetZAxisShow plotSetZLabel ' +
+              'plotSurface plotTS plotXY polar polychar polyeval polygamma polyint polymake polymat polymroot polymult polyroot ' +
+              'pqgwin previousindex princomp printfm printfmt prodc psi putarray putf putvals pvCreate pvGetIndex pvGetParNames ' +
+              'pvGetParVector pvLength pvList pvPack pvPacki pvPackm pvPackmi pvPacks pvPacksi pvPacksm pvPacksmi pvPutParVector ' +
+              'pvTest pvUnpack QNewton QNewtonmt QNewtonmtControlCreate QNewtonmtOutCreate QNewtonSet QProg QProgmt QProgmtInCreate ' +
+              'qqr qqre qqrep qr qre qrep qrsol qrtsol qtyr qtyre qtyrep quantile quantiled qyr qyre qyrep qz rank rankindx readr ' +
+              'real reclassify reclassifyCuts recode recserar recsercp recserrc rerun rescale reshape rets rev rfft rffti rfftip rfftn ' +
+              'rfftnp rfftp rndBernoulli rndBeta rndBinomial rndCauchy rndChiSquare rndCon rndCreateState rndExp rndGamma rndGeo rndGumbel ' +
+              'rndHyperGeo rndi rndKMbeta rndKMgam rndKMi rndKMn rndKMnb rndKMp rndKMu rndKMvm rndLaplace rndLCbeta rndLCgam rndLCi rndLCn ' +
+              'rndLCnb rndLCp rndLCu rndLCvm rndLogNorm rndMTu rndMVn rndMVt rndn rndnb rndNegBinomial rndp rndPoisson rndRayleigh ' +
+              'rndStateSkip rndu rndvm rndWeibull rndWishart rotater round rows rowsf rref sampleData satostrC saved saveStruct savewind ' +
+              'scale scale3d scalerr scalinfnanmiss scalmiss schtoc schur searchsourcepath seekr select selif seqa seqm setdif setdifsa ' +
+              'setvars setvwrmode setwind shell shiftr sin singleindex sinh sleep solpd sortc sortcc sortd sorthc sorthcc sortind ' +
+              'sortindc sortmc sortr sortrc spBiconjGradSol spChol spConjGradSol spCreate spDenseSubmat spDiagRvMat spEigv spEye spLDL ' +
+              'spline spLU spNumNZE spOnes spreadSheetReadM spreadSheetReadSA spreadSheetWrite spScale spSubmat spToDense spTrTDense ' +
+              'spTScalar spZeros sqpSolve sqpSolveMT sqpSolveMTControlCreate sqpSolveMTlagrangeCreate sqpSolveMToutCreate sqpSolveSet ' +
+              'sqrt statements stdc stdsc stocv stof strcombine strindx strlen strput strrindx strsect strsplit strsplitPad strtodt ' +
+              'strtof strtofcplx strtriml strtrimr strtrunc strtruncl strtruncpad strtruncr submat subscat substute subvec sumc sumr ' +
+              'surface svd svd1 svd2 svdcusv svds svdusv sysstate tab tan tanh tempname threadBegin threadEnd threadEndFor threadFor ' +
+              'threadJoin threadStat time timedt timestr timeutc title tkf2eps tkf2ps tocart todaydt toeplitz token topolar trapchk ' +
+              'trigamma trimr trunc type typecv typef union unionsa uniqindx uniqindxsa unique uniquesa upmat upmat1 upper utctodt ' +
+              'utctodtv utrisol vals varCovMS varCovXS varget vargetl varmall varmares varput varputl vartypef vcm vcms vcx vcxs ' +
+              'vec vech vecr vector vget view viewxyz vlist vnamecv volume vput vread vtypecv wait waitc walkindex where window ' +
+              'writer xlabel xlsGetSheetCount xlsGetSheetSize xlsGetSheetTypes xlsMakeRange xlsReadM xlsReadSA xlsWrite xlsWriteM ' +
+              'xlsWriteSA xpnd xtics xy xyz ylabel ytics zeros zeta zlabel ztics',
+    literal: 'DB_AFTER_LAST_ROW DB_ALL_TABLES DB_BATCH_OPERATIONS DB_BEFORE_FIRST_ROW DB_BLOB DB_EVENT_NOTIFICATIONS ' +
+             'DB_FINISH_QUERY DB_HIGH_PRECISION DB_LAST_INSERT_ID DB_LOW_PRECISION_DOUBLE DB_LOW_PRECISION_INT32 ' +
+             'DB_LOW_PRECISION_INT64 DB_LOW_PRECISION_NUMBERS DB_MULTIPLE_RESULT_SETS DB_NAMED_PLACEHOLDERS ' +
+             'DB_POSITIONAL_PLACEHOLDERS DB_PREPARED_QUERIES DB_QUERY_SIZE DB_SIMPLE_LOCKING DB_SYSTEM_TABLES DB_TABLES ' +
+             'DB_TRANSACTIONS DB_UNICODE DB_VIEWS'
+  };
+
+  var PREPROCESSOR =
+  {
+    className: 'meta',
+    begin: '#', end: '$',
+    keywords: {'meta-keyword': 'define definecs|10 undef ifdef ifndef iflight ifdllcall ifmac ifos2win ifunix else endif lineson linesoff srcfile srcline'},
+    contains: [
+      {
+        begin: /\\\n/, relevance: 0
+      },
+      {
+        beginKeywords: 'include', end: '$',
+        keywords: {'meta-keyword': 'include'},
+        contains: [
+          {
+            className: 'meta-string',
+            begin: '"', end: '"',
+            illegal: '\\n'
+          }
+        ]
+      },
+      hljs.C_LINE_COMMENT_MODE,
+      hljs.C_BLOCK_COMMENT_MODE
+    ]
+  };
+
+  var FUNCTION_TITLE = hljs.UNDERSCORE_IDENT_RE + '\\s*\\(?';
+  var PARSE_PARAMS = [
+    {
+      className: 'params',
+      begin: /\(/, end: /\)/,
+      keywords: KEYWORDS,
+      relevance: 0,
+      contains: [
+        hljs.C_NUMBER_MODE,
+        hljs.C_LINE_COMMENT_MODE,
+        hljs.C_BLOCK_COMMENT_MODE
+      ]
+    }
+  ];
+
+  return {
+    aliases: ['gss'],
+    case_insensitive: true, // language is case-insensitive
+    keywords: KEYWORDS,
+    illegal: '(\\{[%#]|[%#]\\})',
+    contains: [
+      hljs.C_NUMBER_MODE,
+      hljs.C_LINE_COMMENT_MODE,
+      hljs.C_BLOCK_COMMENT_MODE,
+      hljs.COMMENT('@', '@'),
+      PREPROCESSOR,
+      {
+        className: 'string',
+        begin: '"', end: '"',
+        contains: [hljs.BACKSLASH_ESCAPE]
+      },
+      {
+        className: 'function',
+        beginKeywords: 'proc keyword',
+        end: ';',
+        excludeEnd: true,
+        keywords: KEYWORDS,
+        contains: [
+          {
+            begin: FUNCTION_TITLE, returnBegin: true,
+            contains: [hljs.UNDERSCORE_TITLE_MODE],
+            relevance: 0
+          },
+          hljs.C_NUMBER_MODE,
+          hljs.C_LINE_COMMENT_MODE,
+          hljs.C_BLOCK_COMMENT_MODE,
+          PREPROCESSOR
+        ].concat(PARSE_PARAMS)
+      },
+      {
+        className: 'function',
+        beginKeywords: 'fn',
+        end: ';',
+        excludeEnd: true,
+        keywords: KEYWORDS,
+        contains: [
+          {
+            begin: FUNCTION_TITLE + hljs.IDENT_RE + '\\)?\\s*\\=\\s*', returnBegin: true,
+            contains: [hljs.UNDERSCORE_TITLE_MODE],
+            relevance: 0
+          },
+          hljs.C_NUMBER_MODE,
+          hljs.C_LINE_COMMENT_MODE,
+          hljs.C_BLOCK_COMMENT_MODE
+        ].concat(PARSE_PARAMS)
+      },
+      {
+        className: 'function',
+        begin: '\\bexternal (proc|keyword|fn)\\s+',
+        end: ';',
+        excludeEnd: true,
+        keywords: KEYWORDS,
+        contains: [
+          {
+            begin: FUNCTION_TITLE, returnBegin: true,
+            contains: [hljs.UNDERSCORE_TITLE_MODE],
+            relevance: 0
+          },
+          hljs.C_LINE_COMMENT_MODE,
+          hljs.C_BLOCK_COMMENT_MODE
+        ]
+      },
+      {
+        className: 'function',
+        begin: '\\bexternal (matrix|string|array|sparse matrix|struct ' + hljs.IDENT_RE + ')\\s+',
+        end: ';',
+        excludeEnd: true,
+        keywords: KEYWORDS,
+        contains: [
+          hljs.C_LINE_COMMENT_MODE,
+          hljs.C_BLOCK_COMMENT_MODE
+        ]
       }
     ]
   };
@@ -7379,7 +7937,7 @@ hljs.registerLanguage('irpf90', function(hljs) {
 });
 
 hljs.registerLanguage('java', function(hljs) {
-  var GENERIC_IDENT_RE = hljs.UNDERSCORE_IDENT_RE + '(<(' + hljs.UNDERSCORE_IDENT_RE + '|\\s*,\\s*)+>)?';
+  var GENERIC_IDENT_RE = hljs.UNDERSCORE_IDENT_RE + '(<' + hljs.UNDERSCORE_IDENT_RE + '(\\s*,\\s*' + hljs.UNDERSCORE_IDENT_RE + ')*>)?';
   var KEYWORDS =
     'false synchronized int abstract float private char boolean static null if const ' +
     'for true while long strictfp finally protected import native final void ' +
@@ -7513,6 +8071,10 @@ hljs.registerLanguage('javascript', function(hljs) {
         relevance: 10,
         begin: /^\s*['"]use (strict|asm)['"]/
       },
+      {
+        className: 'meta',
+        begin: /^#!/, end: /$/
+      },
       hljs.APOS_STRING_MODE,
       hljs.QUOTE_STRING_MODE,
       { // template string
@@ -7589,7 +8151,7 @@ hljs.registerLanguage('javascript', function(hljs) {
         beginKeywords: 'constructor', end: /\{/, excludeEnd: true
       }
     ],
-    illegal: /#/
+    illegal: /#(?!!)/
   };
 });
 
@@ -10745,7 +11307,14 @@ hljs.registerLanguage('python', function(hljs) {
         ],
         end: /:/,
         illegal: /[${=;\n,]/,
-        contains: [hljs.UNDERSCORE_TITLE_MODE, PARAMS]
+        contains: [
+          hljs.UNDERSCORE_TITLE_MODE,
+          PARAMS,
+          {
+            begin: /->/, endsWithParent: true,
+            keywords: 'None'
+          }
+        ]
       },
       {
         className: 'meta',
@@ -11051,7 +11620,7 @@ hljs.registerLanguage('rust', function(hljs) {
     'Copy Send Sized Sync Drop Fn FnMut FnOnce drop Box ToOwned Clone ' +
     'PartialEq PartialOrd Eq Ord AsRef AsMut Into From Default Iterator ' +
     'Extend IntoIterator DoubleEndedIterator ExactSizeIterator Option ' +
-    'Some None Result Ok Err SliceConcatExt String ToString Vec ' +
+    'Result SliceConcatExt String ToString Vec ' +
     // macros
     'assert! assert_eq! bitflags! bytes! cfg! col! concat! concat_idents! ' +
     'debug_assert! debug_assert_eq! env! panic! file! format! format_args! ' +
@@ -11071,7 +11640,7 @@ hljs.registerLanguage('rust', function(hljs) {
         'float f32 f64 ' +
         'str char bool',
       literal:
-        'true false',
+        'true false Some None Ok Err',
       built_in:
         BUILTINS
     },
@@ -11080,12 +11649,12 @@ hljs.registerLanguage('rust', function(hljs) {
     contains: [
       hljs.C_LINE_COMMENT_MODE,
       BLOCK_COMMENT,
-      hljs.inherit(hljs.QUOTE_STRING_MODE, {illegal: null}),
+      hljs.inherit(hljs.QUOTE_STRING_MODE, {begin: /b?"/, illegal: null}),
       {
         className: 'string',
         variants: [
            { begin: /r(#*)".*?"\1(?!#)/ },
-           { begin: /'\\?(x\w{2}|u\w{4}|U\w{8}|.)'/ },
+           { begin: /b?'\\?(x\w{2}|u\w{4}|U\w{8}|.)'/ }
         ]
       },
       {
@@ -11111,7 +11680,13 @@ hljs.registerLanguage('rust', function(hljs) {
       },
       {
         className: 'meta',
-        begin: '#\\!?\\[', end: '\\]'
+        begin: '#\\!?\\[', end: '\\]',
+        contains: [
+          {
+            className: 'meta-string',
+            begin: /"/, end: /"/
+          }
+        ]
       },
       {
         className: 'class',
@@ -11121,7 +11696,7 @@ hljs.registerLanguage('rust', function(hljs) {
       },
       {
         className: 'class',
-        beginKeywords: 'trait enum', end: '{',
+        beginKeywords: 'trait enum struct', end: '{',
         contains: [
           hljs.inherit(hljs.UNDERSCORE_TITLE_MODE, {endsParent: true})
         ],
@@ -11949,6 +12524,89 @@ hljs.registerLanguage('sql', function(hljs) {
       },
       hljs.C_BLOCK_COMMENT_MODE,
       COMMENT_MODE
+    ]
+  };
+});
+
+hljs.registerLanguage('stan', function(hljs) {
+  return {
+    contains: [
+      hljs.HASH_COMMENT_MODE,
+      hljs.C_LINE_COMMENT_MODE,
+      hljs.C_BLOCK_COMMENT_MODE,
+      {
+        begin: hljs.UNDERSCORE_IDENT_RE,
+        lexemes: hljs.UNDERSCORE_IDENT_RE,
+        keywords: {
+          // Stan's keywords
+          name:
+            'for in while repeat until if then else',
+          // Stan's probablity distributions (less beta and gamma, as commonly
+          // used for parameter names). So far, _log and _rng variants are not
+          // included
+          symbol:
+            'bernoulli bernoulli_logit binomial binomial_logit '               +
+            'beta_binomial hypergeometric categorical categorical_logit '      +
+            'ordered_logistic neg_binomial neg_binomial_2 '                    +
+            'neg_binomial_2_log poisson poisson_log multinomial normal '       +
+            'exp_mod_normal skew_normal student_t cauchy double_exponential '  +
+            'logistic gumbel lognormal chi_square inv_chi_square '             +
+            'scaled_inv_chi_square exponential inv_gamma weibull frechet '     +
+            'rayleigh wiener pareto pareto_type_2 von_mises uniform '          +
+            'multi_normal multi_normal_prec multi_normal_cholesky multi_gp '   +
+            'multi_gp_cholesky multi_student_t gaussian_dlm_obs dirichlet '    +
+            'lkj_corr lkj_corr_cholesky wishart inv_wishart',
+          // Stan's data types
+          'selector-tag':
+            'int real vector simplex unit_vector ordered positive_ordered '    +
+            'row_vector matrix cholesky_factor_corr cholesky_factor_cov '      +
+            'corr_matrix cov_matrix',
+          // Stan's model blocks
+          title:
+            'functions model data parameters quantities transformed '          +
+            'generated',
+          literal:
+            'true false'
+        },
+        relevance: 0
+      },
+      // The below is all taken from the R language definition
+      {
+        // hex value
+        className: 'number',
+        begin: "0[xX][0-9a-fA-F]+[Li]?\\b",
+        relevance: 0
+      },
+      {
+        // hex value
+        className: 'number',
+        begin: "0[xX][0-9a-fA-F]+[Li]?\\b",
+        relevance: 0
+      },
+      {
+        // explicit integer
+        className: 'number',
+        begin: "\\d+(?:[eE][+\\-]?\\d*)?L\\b",
+        relevance: 0
+      },
+      {
+        // number with trailing decimal
+        className: 'number',
+        begin: "\\d+\\.(?!\\d)(?:i\\b)?",
+        relevance: 0
+      },
+      {
+        // number
+        className: 'number',
+        begin: "\\d+(?:\\.\\d*)?(?:[eE][+\\-]?\\d*)?i?\\b",
+        relevance: 0
+      },
+      {
+        // number with leading decimal
+        className: 'number',
+        begin: "\\.\\d+(?:[eE][+\\-]?\\d*)?i?\\b",
+        relevance: 0
+      }
     ]
   };
 });
@@ -13169,7 +13827,7 @@ hljs.registerLanguage('vbscript-html', function(hljs) {
 hljs.registerLanguage('verilog', function(hljs) {
   return {
     aliases: ['v'],
-    case_insensitive: true,
+    case_insensitive: false,
     keywords: {
       keyword:
         'always and assign begin buf bufif0 bufif1 case casex casez cmos deassign ' +
@@ -13191,7 +13849,7 @@ hljs.registerLanguage('verilog', function(hljs) {
       hljs.QUOTE_STRING_MODE,
       {
         className: 'number',
-        begin: '\\b(\\d+\'(b|h|o|d|B|H|O|D))?[0-9xzXZ]+',
+        begin: '(\\b((\\d\'(b|h|o|d|B|H|O|D))[0-9xzXZa-fA-F\_]+))|(\\B((\'(b|h|o|d|B|H|O|D))[0-9xzXZa-fA-F\_]+))|(\\b([0-9xzXZ\_])+)',
         contains: [hljs.BACKSLASH_ESCAPE],
         relevance: 0
       },
