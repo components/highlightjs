@@ -1,4 +1,4 @@
-/*! highlight.js v9.5.0 | BSD3 License | git.io/hljslicense */
+/*! highlight.js v9.6.0 | BSD3 License | git.io/hljslicense */
 (function(factory) {
 
   // Find the global object for export to both the browser and web workers.
@@ -322,7 +322,9 @@
   function highlight(name, value, ignore_illegals, continuation) {
 
     function subMode(lexeme, mode) {
-      for (var i = 0; i < mode.contains.length; i++) {
+      var i, length;
+
+      for (i = 0, length = mode.contains.length; i < length; i++) {
         if (testRe(mode.contains[i].beginRe, lexeme)) {
           return mode.contains[i];
         }
@@ -887,6 +889,77 @@ hljs.registerLanguage('1c', function(hljs){
   };
 });
 
+hljs.registerLanguage('abnf', function(hljs) {
+    var regexes = {
+        ruleDeclaration: "^[a-zA-Z][a-zA-Z0-9-]*",
+        unexpectedChars: "[!@#$^&',?+~`|:]"
+    };
+
+    var keywords = [
+        "ALPHA",
+        "BIT",
+        "CHAR",
+        "CR",
+        "CRLF",
+        "CTL",
+        "DIGIT",
+        "DQUOTE",
+        "HEXDIG",
+        "HTAB",
+        "LF",
+        "LWSP",
+        "OCTET",
+        "SP",
+        "VCHAR",
+        "WSP"
+    ];
+
+    var commentMode = hljs.COMMENT(";", "$");
+
+    var terminalBinaryMode = {
+        className: "symbol",
+        begin: /%b[0-1]+(-[0-1]+|(\.[0-1]+)+){0,1}/
+    };
+
+    var terminalDecimalMode = {
+        className: "symbol",
+        begin: /%d[0-9]+(-[0-9]+|(\.[0-9]+)+){0,1}/
+    };
+
+    var terminalHexadecimalMode = {
+        className: "symbol",
+        begin: /%x[0-9A-F]+(-[0-9A-F]+|(\.[0-9A-F]+)+){0,1}/,
+    };
+
+    var caseSensitivityIndicatorMode = {
+        className: "symbol",
+        begin: /%[si]/
+    };
+
+    var ruleDeclarationMode = {
+        begin: regexes.ruleDeclaration + '\\s*=',
+        returnBegin: true,
+        end: /=/,
+        relevance: 0,
+        contains: [{className: "attribute", begin: regexes.ruleDeclaration}]
+    };
+
+    return {
+      illegal: regexes.unexpectedChars,
+      keywords: keywords.join(" "),
+      contains: [
+          ruleDeclarationMode,
+          commentMode,
+          terminalBinaryMode,
+          terminalDecimalMode,
+          terminalHexadecimalMode,
+          caseSensitivityIndicatorMode,
+          hljs.QUOTE_STRING_MODE,
+          hljs.NUMBER_MODE
+      ]
+    };
+});
+
 hljs.registerLanguage('accesslog', function(hljs) {
   return {
     contains: [
@@ -1365,7 +1438,7 @@ hljs.registerLanguage('cpp', function(hljs) {
   var FUNCTION_TITLE = hljs.IDENT_RE + '\\s*\\(';
 
   var CPP_KEYWORDS = {
-    keyword: 'int float while private char catch export virtual operator sizeof ' +
+    keyword: 'int float while private char catch import module export virtual operator sizeof ' +
       'dynamic_cast|10 typedef const_cast|10 const struct for static_cast|10 union namespace ' +
       'unsigned long volatile static protected bool template mutable if public friend ' +
       'do goto auto void enum else break extern using class asm case typeid ' +
@@ -2343,6 +2416,59 @@ hljs.registerLanguage('avrasm', function(hljs) {
   };
 });
 
+hljs.registerLanguage('awk', function(hljs) {
+  var VARIABLE = {
+    className: 'variable',
+    variants: [
+      {begin: /\$[\w\d#@][\w\d_]*/},
+      {begin: /\$\{(.*?)}/}
+    ]
+  };
+  var KEYWORDS = 'BEGIN END if else while do for in break continue delete next nextfile function func exit|10';
+  var STRING = {
+    className: 'string',
+    contains: [hljs.BACKSLASH_ESCAPE],
+    variants: [
+      {
+        begin: /(u|b)?r?'''/, end: /'''/,
+        relevance: 10
+      },
+      {
+        begin: /(u|b)?r?"""/, end: /"""/,
+        relevance: 10
+      },
+      {
+        begin: /(u|r|ur)'/, end: /'/,
+        relevance: 10
+      },
+      {
+        begin: /(u|r|ur)"/, end: /"/,
+        relevance: 10
+      },
+      {
+        begin: /(b|br)'/, end: /'/
+      },
+      {
+        begin: /(b|br)"/, end: /"/
+      },
+      hljs.APOS_STRING_MODE,
+      hljs.QUOTE_STRING_MODE
+    ]
+  };
+  return {
+	 keywords: {
+	   keyword: KEYWORDS
+    },
+    contains: [
+      VARIABLE,
+      STRING,
+      hljs.REGEXP_MODE,
+      hljs.HASH_COMMENT_MODE,
+      hljs.NUMBER_MODE
+    ]
+  }
+});
+
 hljs.registerLanguage('axapta', function(hljs) {
   return {
     keywords: 'false int abstract private char boolean static null if for true ' +
@@ -2402,7 +2528,7 @@ hljs.registerLanguage('bash', function(hljs) {
 
   return {
     aliases: ['sh', 'zsh'],
-    lexemes: /-?[a-z\.]+/,
+    lexemes: /-?[a-z\._]+/,
     keywords: {
       keyword:
         'if then else elif fi for while in do done case esac function',
@@ -4757,6 +4883,39 @@ hljs.registerLanguage('dust', function(hljs) {
   };
 });
 
+hljs.registerLanguage('ebnf', function(hljs) {
+    var commentMode = hljs.COMMENT(/\(\*/, /\*\)/);
+
+    var nonTerminalMode = {
+        className: "attribute",
+        begin: /^[ ]*[a-zA-Z][a-zA-Z-]*([\s-]+[a-zA-Z][a-zA-Z]*)*/
+    };
+
+    var specialSequenceMode = {
+        className: "meta",
+        begin: /\?.*\?/
+    };
+
+    var ruleBodyMode = {
+        begin: /=/, end: /;/,
+        contains: [
+            commentMode,
+            specialSequenceMode,
+            // terminals
+            hljs.APOS_STRING_MODE, hljs.QUOTE_STRING_MODE
+        ]
+    };
+
+    return {
+        illegal: /\S/,
+        contains: [
+            commentMode,
+            nonTerminalMode,
+            ruleBodyMode
+        ]
+    };
+});
+
 hljs.registerLanguage('elixir', function(hljs) {
   var ELIXIR_IDENT_RE = '[a-zA-Z_][a-zA-Z0-9_]*(\\!|\\?)?';
   var ELIXIR_METHOD_RE = '[a-zA-Z_]\\w*[!?=]?|[-+~]\\@|<<|>>|=~|===?|<=>|[<>]=?|\\*\\*|[-/+%^&*~`|]|\\[\\]=?';
@@ -4891,14 +5050,14 @@ hljs.registerLanguage('elm', function(hljs) {
   return {
     keywords:
       'let in if then else case of where module import exposing ' +
-      'type alias as infix infixl infixr port effect command',
+      'type alias as infix infixl infixr port effect command subscription',
     contains: [
 
       // Top-level constructions.
 
       {
         beginKeywords: 'port effect module', end: 'exposing',
-        keywords: 'port effect module where command exposing',
+        keywords: 'port effect module where command subscription exposing',
         contains: [LIST, COMMENT],
         illegal: '\\W\\.|;'
       },
@@ -7616,36 +7775,35 @@ hljs.registerLanguage('kotlin', function (hljs) {
 });
 
 hljs.registerLanguage('lasso', function(hljs) {
-  var LASSO_IDENT_RE = '[a-zA-Z_][a-zA-Z0-9_.]*';
+  var LASSO_IDENT_RE = '[a-zA-Z_][\\w.]*';
   var LASSO_ANGLE_RE = '<\\?(lasso(script)?|=)';
   var LASSO_CLOSE_RE = '\\]|\\?>';
   var LASSO_KEYWORDS = {
     literal:
-      'true false none minimal full all void ' +
+      'true false none minimal full all void and or not ' +
       'bw nbw ew new cn ncn lt lte gt gte eq neq rx nrx ft',
     built_in:
       'array date decimal duration integer map pair string tag xml null ' +
       'boolean bytes keyword list locale queue set stack staticarray ' +
       'local var variable global data self inherited currentcapture givenblock',
     keyword:
-      'error_code error_msg error_pop error_push error_reset cache ' +
-      'database_names database_schemanames database_tablenames define_tag ' +
-      'define_type email_batch encode_set html_comment handle handle_error ' +
-      'header if inline iterate ljax_target link link_currentaction ' +
-      'link_currentgroup link_currentrecord link_detail link_firstgroup ' +
-      'link_firstrecord link_lastgroup link_lastrecord link_nextgroup ' +
-      'link_nextrecord link_prevgroup link_prevrecord log loop ' +
-      'namespace_using output_none portal private protect records referer ' +
-      'referrer repeating resultset rows search_args search_arguments ' +
-      'select sort_args sort_arguments thread_atomic value_list while ' +
-      'abort case else if_empty if_false if_null if_true loop_abort ' +
-      'loop_continue loop_count params params_up return return_value ' +
-      'run_children soap_definetag soap_lastrequest soap_lastresponse ' +
-      'tag_name ascending average by define descending do equals ' +
-      'frozen group handle_failure import in into join let match max ' +
-      'min on order parent protected provide public require returnhome ' +
-      'skip split_thread sum take thread to trait type where with ' +
-      'yield yieldhome and or not'
+      'cache database_names database_schemanames database_tablenames ' +
+      'define_tag define_type email_batch encode_set html_comment handle ' +
+      'handle_error header if inline iterate ljax_target link ' +
+      'link_currentaction link_currentgroup link_currentrecord link_detail ' +
+      'link_firstgroup link_firstrecord link_lastgroup link_lastrecord ' +
+      'link_nextgroup link_nextrecord link_prevgroup link_prevrecord log ' +
+      'loop namespace_using output_none portal private protect records ' +
+      'referer referrer repeating resultset rows search_args ' +
+      'search_arguments select sort_args sort_arguments thread_atomic ' +
+      'value_list while abort case else fail_if fail_ifnot fail if_empty ' +
+      'if_false if_null if_true loop_abort loop_continue loop_count params ' +
+      'params_up return return_value run_children soap_definetag ' +
+      'soap_lastrequest soap_lastresponse tag_name ascending average by ' +
+      'define descending do equals frozen group handle_failure import in ' +
+      'into join let match max min on order parent protected provide public ' +
+      'require returnhome skip split_thread sum take thread to trait type ' +
+      'where with yield yieldhome'
   };
   var HTML_COMMENT = hljs.COMMENT(
     '<!--',
@@ -7672,13 +7830,9 @@ hljs.registerLanguage('lasso', function(hljs) {
     begin: '\'' + LASSO_IDENT_RE + '\''
   };
   var LASSO_CODE = [
-    hljs.COMMENT(
-      '/\\*\\*!',
-      '\\*/'
-    ),
     hljs.C_LINE_COMMENT_MODE,
     hljs.C_BLOCK_COMMENT_MODE,
-    hljs.inherit(hljs.C_NUMBER_MODE, {begin: hljs.C_NUMBER_RE + '|(infinity|nan)\\b'}),
+    hljs.inherit(hljs.C_NUMBER_MODE, {begin: hljs.C_NUMBER_RE + '|(-?infinity|NaN)\\b'}),
     hljs.inherit(hljs.APOS_STRING_MODE, {illegal: null}),
     hljs.inherit(hljs.QUOTE_STRING_MODE, {illegal: null}),
     {
@@ -7702,10 +7856,10 @@ hljs.registerLanguage('lasso', function(hljs) {
       illegal: '\\W'
     },
     {
-      className: 'attr',
+      className: 'params',
       variants: [
         {
-          begin: '-(?!infinity)' + hljs.UNDERSCORE_IDENT_RE,
+          begin: '-(?!infinity)' + LASSO_IDENT_RE,
           relevance: 0
         },
         {
@@ -7714,7 +7868,7 @@ hljs.registerLanguage('lasso', function(hljs) {
       ]
     },
     {
-      begin: /(->|\.\.?)\s*/,
+      begin: /(->|\.)\s*/,
       relevance: 0,
       contains: [LASSO_DATAMEMBER]
     },
@@ -7723,7 +7877,7 @@ hljs.registerLanguage('lasso', function(hljs) {
       beginKeywords: 'define',
       returnEnd: true, end: '\\(|=>',
       contains: [
-        hljs.inherit(hljs.TITLE_MODE, {begin: hljs.UNDERSCORE_IDENT_RE + '(=(?!>))?'})
+        hljs.inherit(hljs.TITLE_MODE, {begin: LASSO_IDENT_RE + '(=(?!>))?|[-+*/%](?!>)'})
       ]
     }
   ];
@@ -7776,7 +7930,7 @@ hljs.registerLanguage('lasso', function(hljs) {
       },
       {
         className: 'meta',
-        begin: '^#!.+lasso9\\b',
+        begin: '^#!', end:'lasso9$',
         relevance: 10
       }
     ].concat(LASSO_CODE)
@@ -12922,7 +13076,7 @@ hljs.registerLanguage('sql', function(hljs) {
           'delete do handler insert load replace select truncate update set show pragma grant ' +
           'merge describe use explain help declare prepare execute deallocate release ' +
           'unlock purge reset change stop analyze cache flush optimize repair kill ' +
-          'install uninstall checksum restore check backup revoke',
+          'install uninstall checksum restore check backup revoke comment',
         end: /;/, endsWithParent: true,
         lexemes: /[\w\.]+/,
         keywords: {
@@ -13688,6 +13842,40 @@ hljs.registerLanguage('stylus', function(hljs) {
           relevance: 0
         }
       }
+    ]
+  };
+});
+
+hljs.registerLanguage('subunit', function(hljs) {
+  var DETAILS = {
+    className: 'string',
+    begin: '\\[\n(multipart)?', end: '\\]\n'
+  };
+  var TIME = {
+    className: 'string',
+    begin: '\\d{4}-\\d{2}-\\d{2}(\\s+)\\d{2}:\\d{2}:\\d{2}\.\\d+Z'
+  };
+  var PROGRESSVALUE = {
+    className: 'string',
+    begin: '(\\+|-)\\d+'
+  };
+  var KEYWORDS = {
+    className: 'keyword',
+    relevance: 10,
+    variants: [
+      { begin: '^(test|testing|success|successful|failure|error|skip|xfail|uxsuccess)(:?)\\s+(test)?' },
+      { begin: '^progress(:?)(\\s+)?(pop|push)?' },
+      { begin: '^tags:' },
+      { begin: '^time:' }
+    ],
+  };
+  return {
+    case_insensitive: true,
+    contains: [
+      DETAILS,
+      TIME,
+      PROGRESSVALUE,
+      KEYWORDS
     ]
   };
 });
