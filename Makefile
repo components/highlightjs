@@ -1,4 +1,4 @@
-VERSION=9.10.0
+VERSION=9.11.0
 
 default: build
 	@cp -f build/highlight.* .

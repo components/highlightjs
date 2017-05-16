@@ -1,4 +1,4 @@
-/*! highlight.js v9.10.0 | BSD3 License | git.io/hljslicense */
+/*! highlight.js v9.11.0 | BSD3 License | git.io/hljslicense */
 (function(factory) {
 
   // Find the global object for export to both the browser and web workers.
@@ -47,19 +47,11 @@
     languages: undefined
   };
 
-  // Object map that is used to escape some common HTML characters.
-  var escapeRegexMap = {
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;'
-  };
 
   /* Utility functions */
 
   function escape(value) {
-    return value.replace(/[&<>]/gm, function(character) {
-      return escapeRegexMap[character];
-    });
+    return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   }
 
   function tag(node) {
@@ -176,7 +168,7 @@
     }
 
     function open(node) {
-      function attr_str(a) {return ' ' + a.nodeName + '="' + escape(a.value) + '"';}
+      function attr_str(a) {return ' ' + a.nodeName + '="' + escape(a.value).replace('"', '&quot;') + '"';}
       result += '<' + tag(node) + ArrayProto.map.call(node.attributes, attr_str).join('') + '>';
     }
 
@@ -737,7 +729,7 @@
     contains: [hljs.BACKSLASH_ESCAPE]
   };
   hljs.PHRASAL_WORDS_MODE = {
-    begin: /\b(a|an|the|are|I'm|isn't|don't|doesn't|won't|but|just|should|pretty|simply|enough|gonna|going|wtf|so|such|will|you|your|like)\b/
+    begin: /\b(a|an|the|are|I'm|isn't|don't|doesn't|won't|but|just|should|pretty|simply|enough|gonna|going|wtf|so|such|will|you|your|they|like|more)\b/
   };
   hljs.COMMENT = function (begin, end, inherits) {
     var mode = hljs.inherit(
@@ -1412,7 +1404,7 @@ hljs.registerLanguage('cpp', function(hljs) {
     className: 'number',
     variants: [
       { begin: '\\b(0b[01\']+)' },
-      { begin: '\\b([\\d\']+(\\.[\\d\']*)?|\\.[\\d\']+)(u|U|l|L|ul|UL|f|F|b|B)' },
+      { begin: '(-?)\\b([\\d\']+(\\.[\\d\']*)?|\\.[\\d\']+)(u|U|l|L|ul|UL|f|F|b|B)' },
       { begin: '(-?)(\\b0[xX][a-fA-F0-9\']+|(\\b[\\d\']+(\\.[\\d\']*)?|\\.[\\d\']+)([eE][-+]?[\\d\']+)?)' }
     ],
     relevance: 0
@@ -1445,15 +1437,16 @@ hljs.registerLanguage('cpp', function(hljs) {
 
   var CPP_KEYWORDS = {
     keyword: 'int float while private char catch import module export virtual operator sizeof ' +
-      'dynamic_cast|10 typedef const_cast|10 const struct for static_cast|10 union namespace ' +
+      'dynamic_cast|10 typedef const_cast|10 const for static_cast|10 union namespace ' +
       'unsigned long volatile static protected bool template mutable if public friend ' +
-      'do goto auto void enum else break extern using class asm case typeid ' +
+      'do goto auto void enum else break extern using asm case typeid ' +
       'short reinterpret_cast|10 default double register explicit signed typename try this ' +
       'switch continue inline delete alignof constexpr decltype ' +
       'noexcept static_assert thread_local restrict _Bool complex _Complex _Imaginary ' +
       'atomic_bool atomic_char atomic_schar ' +
       'atomic_uchar atomic_short atomic_ushort atomic_int atomic_uint atomic_long atomic_ulong atomic_llong ' +
-      'atomic_ullong new throw return',
+      'atomic_ullong new throw return ' +
+      'and or not',
     built_in: 'std string cin cout cerr clog stdin stdout stderr stringstream istringstream ostringstream ' +
       'auto_ptr deque list queue stack vector map set bitset multiset multimap unordered_set ' +
       'unordered_map unordered_multiset unordered_multimap array shared_ptr abort abs acos ' +
@@ -1538,6 +1531,14 @@ hljs.registerLanguage('cpp', function(hljs) {
           hljs.C_LINE_COMMENT_MODE,
           hljs.C_BLOCK_COMMENT_MODE,
           PREPROCESSOR
+        ]
+      },
+      {
+        className: 'class',
+        beginKeywords: 'class struct', end: /[{;:]/,
+        contains: [
+          {begin: /</, end: />/, contains: ['self']}, // skip generic stuff
+          hljs.TITLE_MODE
         ]
       }
     ]),
@@ -2125,7 +2126,8 @@ hljs.registerLanguage('aspectj', function (hljs) {
         contains : [
           {
             begin : hljs.UNDERSCORE_IDENT_RE + '\\s*\\(',
-            keywords : KEYWORDS + ' ' + SHORTKEYS
+            keywords : KEYWORDS + ' ' + SHORTKEYS,
+            relevance: 0
           },
           hljs.QUOTE_STRING_MODE
         ]
@@ -4642,14 +4644,14 @@ hljs.registerLanguage('dockerfile', function(hljs) {
   return {
     aliases: ['docker'],
     case_insensitive: true,
-    keywords: 'from maintainer expose env user onbuild',
+    keywords: 'from maintainer expose env arg user onbuild stopsignal',
     contains: [
       hljs.HASH_COMMENT_MODE,
       hljs.APOS_STRING_MODE,
       hljs.QUOTE_STRING_MODE,
       hljs.NUMBER_MODE,
       {
-        beginKeywords: 'run cmd entrypoint volume add copy workdir label healthcheck',
+        beginKeywords: 'run cmd entrypoint volume add copy workdir label healthcheck shell',
         starts: {
           end: /[^\\]\n/,
           subLanguage: 'bash'
@@ -5124,7 +5126,8 @@ hljs.registerLanguage('elm', function(hljs) {
       COMMENT,
 
       {begin: '->|<-'} // No markup, relevance booster
-    ]
+    ],
+    illegal: /;/
   };
 });
 
@@ -5254,6 +5257,7 @@ hljs.registerLanguage('ruby', function(hljs) {
     },
     { // regexp container
       begin: '(' + hljs.RE_STARTERS_RE + '|unless)\\s*',
+      keywords: 'unless',
       contains: [
         IRB_OBJECT,
         {
@@ -6840,7 +6844,7 @@ hljs.registerLanguage('haxe', function(hljs) {
   return {
     aliases: ['hx'],
     keywords: {
-      keyword: 'break callback case cast catch continue default do dynamic else enum extern ' +
+      keyword: 'break case cast catch continue default do dynamic else enum extern ' +
                'for function here if import in inline never new override package private get set ' +
                'public return static super switch this throw trace try typedef untyped using var while ' +
                HAXE_BASIC_TYPES,
@@ -7679,6 +7683,53 @@ hljs.registerLanguage('javascript', function(hljs) {
     ],
     illegal: /#(?!!)/
   };
+});
+
+hljs.registerLanguage('jboss-cli', function (hljs) {
+  var PARAM = {
+    begin: /[\w-]+ *=/, returnBegin: true,
+    relevance: 0,
+    contains: [{className: 'attr', begin: /[\w-]+/}]
+  };
+  var PARAMSBLOCK = {
+    className: 'params',
+    begin: /\(/,
+    end: /\)/,
+    contains: [PARAM],
+    relevance : 0
+  };
+  var OPERATION = {
+    className: 'function',
+    begin: /:[\w\-.]+/,
+    relevance: 0
+  };
+  var PATH = {
+    className: 'string',
+    begin: /\B(([\/.])[\w\-.\/=]+)+/,
+  };
+  var COMMAND_PARAMS = {
+    className: 'params',
+    begin: /--[\w\-=\/]+/,
+  };
+  return {
+    aliases: ['wildfly-cli'],
+    lexemes: '[a-z\-]+',
+    keywords: {
+      keyword: 'alias batch cd clear command connect connection-factory connection-info data-source deploy ' +
+      'deployment-info deployment-overlay echo echo-dmr help history if jdbc-driver-info jms-queue|20 jms-topic|20 ls ' +
+      'patch pwd quit read-attribute read-operation reload rollout-plan run-batch set shutdown try unalias ' +
+      'undeploy unset version xa-data-source', // module
+      literal: 'true false'
+    },
+    contains: [
+      hljs.HASH_COMMENT_MODE,
+      hljs.QUOTE_STRING_MODE,
+      COMMAND_PARAMS,
+      OPERATION,
+      PATH,
+      PARAMSBLOCK
+    ]
+  }
 });
 
 hljs.registerLanguage('json', function(hljs) {
@@ -9049,13 +9100,13 @@ hljs.registerLanguage('lua', function(hljs) {
         'module next pairs pcall print rawequal rawget rawset require select setfenv' +
         'setmetatable tonumber tostring type unpack xpcall arg self' +
         //Library methods and properties (one line per library):
-        'coroutine resume yield status wrap create running debug getupvalue' +
-        'debug sethook getmetatable gethook setmetatable setlocal traceback setfenv getinfo setupvalue getlocal getregistry getfenv' +
-        'io lines write close flush open output type read stderr stdin input stdout popen tmpfile' +
-        'math, log, max, acos, huge, ldexp, pi, cos, tanh, pow, deg, tan, cosh, sinh, random, randomseed, frexp, ceil, floor, rad, abs, sqrt, modf, asin, min, mod, fmod, log10, atan2, exp, sin, atan' +
-        'os, exit, setlocale, date, getenv, difftime, remove, time, clock, tmpname, rename, execute, package, preload, loadlib, loaded, loaders, cpath, config path, seeall' +
-        'string, sub, upper, len, gfind, rep, find, match, char, dump, gmatch, reverse, byte, format, gsub, lower' +
-        'table, setn, insert, getn, foreachi, maxn, foreach, concat, sort, remove'
+        'coroutine resume yield status wrap create running debug getupvalue ' +
+        'debug sethook getmetatable gethook setmetatable setlocal traceback setfenv getinfo setupvalue getlocal getregistry getfenv ' +
+        'io lines write close flush open output type read stderr stdin input stdout popen tmpfile ' +
+        'math log max acos huge ldexp pi cos tanh pow deg tan cosh sinh random randomseed frexp ceil floor rad abs sqrt modf asin min mod fmod log10 atan2 exp sin atan ' +
+        'os exit setlocale date getenv difftime remove time clock tmpname rename execute package preload loadlib loaded loaders cpath config path seeall ' +
+        'string sub upper len gfind rep find match char dump gmatch reverse byte format gsub lower ' +
+        'table setn insert getn foreachi maxn foreach concat sort remove'
     },
     contains: COMMENTS.concat([
       {
@@ -9084,46 +9135,82 @@ hljs.registerLanguage('lua', function(hljs) {
 });
 
 hljs.registerLanguage('makefile', function(hljs) {
+  /* Variables: simple (eg $(var)) and special (eg $@) */
   var VARIABLE = {
     className: 'variable',
-    begin: /\$\(/, end: /\)/,
-    contains: [hljs.BACKSLASH_ESCAPE]
+    variants: [
+      {
+        begin: '\\$\\(' + hljs.UNDERSCORE_IDENT_RE + '\\)',
+        contains: [hljs.BACKSLASH_ESCAPE],
+      },
+      {
+        begin: /\$[@%<?\^\+\*]/
+      },
+    ]
+  };
+  /* Quoted string with variables inside */
+  var QUOTE_STRING = {
+    className: 'string',
+    begin: /"/, end: /"/,
+    contains: [
+      hljs.BACKSLASH_ESCAPE,
+      VARIABLE,
+    ]
+  };
+  /* Function: $(func arg,...) */
+  var FUNC = {
+    className: 'variable',
+    begin: /\$\([\w-]+\s/, end: /\)/,
+    keywords: {
+      built_in:
+        'subst patsubst strip findstring filter filter-out sort ' +
+        'word wordlist firstword lastword dir notdir suffix basename ' +
+        'addsuffix addprefix join wildcard realpath abspath error warning ' +
+        'shell origin flavor foreach if or and call eval file value',
+    },
+    contains: [
+      VARIABLE,
+    ]
+  };
+  /* Variable assignment */
+  var VAR_ASSIG = {
+    begin: '^' + hljs.UNDERSCORE_IDENT_RE + '\\s*[:+?]?=',
+    illegal: '\\n',
+    returnBegin: true,
+    contains: [
+      {
+        begin: '^' + hljs.UNDERSCORE_IDENT_RE, end: '[:+?]?=',
+        excludeEnd: true,
+      }
+    ]
+  };
+  /* Meta targets (.PHONY) */
+  var META = {
+    className: 'meta',
+    begin: /^\.PHONY:/, end: /$/,
+    keywords: {'meta-keyword': '.PHONY'},
+    lexemes: /[\.\w]+/
+  };
+  /* Targets */
+  var TARGET = {
+    className: 'section',
+    begin: /^[^\s]+:/, end: /$/,
+    contains: [VARIABLE,]
   };
   return {
     aliases: ['mk', 'mak'],
+    keywords:
+      'define endef undefine ifdef ifndef ifeq ifneq else endif ' +
+      'include -include sinclude override export unexport private vpath',
+    lexemes: /[\w-]+/,
     contains: [
       hljs.HASH_COMMENT_MODE,
-      {
-        begin: /^\w+\s*\W*=/, returnBegin: true,
-        relevance: 0,
-        starts: {
-          end: /\s*\W*=/, excludeEnd: true,
-          starts: {
-            end: /$/,
-            relevance: 0,
-            contains: [
-              VARIABLE
-            ]
-          }
-        }
-      },
-      {
-        className: 'section',
-        begin: /^[\w]+:\s*$/
-      },
-      {
-        className: 'meta',
-        begin: /^\.PHONY:/, end: /$/,
-        keywords: {'meta-keyword': '.PHONY'}, lexemes: /[\.\w]+/
-      },
-      {
-        begin: /^\t+/, end: /$/,
-        relevance: 0,
-        contains: [
-          hljs.QUOTE_STRING_MODE,
-          VARIABLE
-        ]
-      }
+      VARIABLE,
+      QUOTE_STRING,
+      FUNC,
+      VAR_ASSIG,
+      META,
+      TARGET,
     ]
   };
 });
@@ -12982,6 +13069,21 @@ hljs.registerLanguage('scss', function(hljs) {
       }
     ]
   };
+});
+
+hljs.registerLanguage('shell', function(hljs) {
+  return {
+    aliases: ['console'],
+    contains: [
+      {
+        className: 'meta',
+        begin: '^\\s{0,3}[\\w\\d\\[\\]()@-]*[>%$#]',
+        starts: {
+          end: '$', subLanguage: 'bash'
+        }
+      },
+    ]
+  }
 });
 
 hljs.registerLanguage('smali', function(hljs) {
